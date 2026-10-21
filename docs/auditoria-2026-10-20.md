@@ -37,8 +37,8 @@ Alcance: código (`src/`, `ui/`, `tests/`, `scripts/`), configuración, servicio
 ## Recomendaciones y actualizaciones
 
 1. **Memoria (prioridad 1).** Reiniciar macOS para vaciar el swap y mantener el límite de 12,5 GiB. Usar el modelo 0,8B y evitar 3B mientras haya presión alta.
-2. **CI en GitHub Actions.** Ejecutar `unittest` y `npm run build` en cada push (macOS o Ubuntu con Python 3.12 y Node 22), más `npm audit --omit=dev`.
-3. **Dependabot** para `ui/package.json` y `pyproject.toml`.
+2. **CI en GitHub Actions.** ✅ Hecho el 2026-10-21 (`.github/workflows/ci.yml`): macOS, Python 3.12, Node 22, pruebas, `npm audit --audit-level=high` y compilación de la UI. Primera ejecución en verde.
+3. **Dependabot.** ✅ Hecho el 2026-10-21 (`.github/dependabot.yml`): npm y pip semanal, Actions mensual.
 4. **Escaneo de secretos y datos personales** antes de cada commit (gitleaks o un hook que busque matrículas, CURP y correos).
 5. **Actualizaciones mayores, en una rama aparte y con pruebas:** React 19.2 → 19.3 (menor, bajo riesgo); vite 6 → 8 y TypeScript 5.9 → 7 (mayores, revisar cambios incompatibles).
 6. **Configuración.** Cargar rutas personales desde entorno (`BRAIN_REMOTE_ENV`, etc.) en lugar de JSON versionado.
