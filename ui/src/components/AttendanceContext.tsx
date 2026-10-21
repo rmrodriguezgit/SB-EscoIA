@@ -2,6 +2,7 @@ import { WeeklyTimetable } from "./WeeklyTimetable";
 import { AcademicFileImport } from "./AcademicFileImport";
 import React, { useState, useEffect, useRef } from "react";
 import { request } from "../api";
+import { confirmDialog } from "../lib/confirm";
 export function AttendanceContext({
   onSession,
   onClass,
@@ -220,10 +221,11 @@ export function AttendanceContext({
         </button>
         <button
           disabled={busy || !teacher}
-          onClick={() => {
+          onClick={async () => {
             if (
-              confirm(
+              await confirmDialog(
                 "¿Dar de baja al docente? Si tiene horarios o registros relacionados, la baja será rechazada.",
+                { confirmLabel: "Dar de baja" },
               )
             )
               void act(async () => {

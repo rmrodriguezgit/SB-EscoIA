@@ -61,7 +61,7 @@ export function VoiceRecorder({
           lastPartial = Date.now();
           const version = ++sequence;
           void sendAudio(new Blob(chunks, { type: r.mimeType }), version)
-            .catch(() => {})
+            .catch((e) => console.warn("[EscoIA] transcripción parcial", e))
             .finally(() => (pending = false));
         }
       };

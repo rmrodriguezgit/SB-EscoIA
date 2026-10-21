@@ -1,5 +1,6 @@
 import {useEffect,useState} from 'react';
 import {request} from "../api";
+import {confirmDialog} from "../lib/confirm";
 type Row=Record<string,any>;
 export function RosterAdmin({onChanged}:{onChanged:()=>void}) {
  const [offers,setOffers]=useState<Row[]>([]),[students,setStudents]=useState<Row[]>([]),[members,setMembers]=useState<Row[]>([]);
@@ -8,8 +9,8 @@ export function RosterAdmin({onChanged}:{onChanged:()=>void}) {
  useEffect(()=>{void load().catch(e=>setMessage(String(e)));},[]);
  function clear(){setSelected('');setNumber('');setName('');setTarget('');}
  async function save(action:string){
-  if(action==='remove'&&!confirm(`¿Retirar a ${name} de esta lista? Se conserva su historial y biometría.`))return;
-  if(action==='move'&&!confirm(`¿Cambiar a ${name} al grupo/materia seleccionado? Se conserva la asistencia anterior.`))return;
+  if(action==='remove'&&!(await confirmDialog(`¿Retirar a ${name} de esta lista? Se conserva su historial y biometría.`,{confirmLabel:'Retirar'})))return;
+  if(action==='move'&&!(await confirmDialog(`¿Cambiar a ${name} al grupo/materia seleccionado? Se conserva la asistencia anterior.`,{confirmLabel:'Cambiar de grupo'})))return;
   setBusy(true);setMessage('Guardando…');
   try{const r=await request('attendance/roster',{action,offeringId:Number(offer),studentId:selected?Number(selected):undefined,targetId:target?Number(target):undefined,number:number.trim(),name:name.trim()});setMessage(r.message);await load();clear();onChanged();}catch(e){setMessage(String(e));}finally{setBusy(false);}
  }

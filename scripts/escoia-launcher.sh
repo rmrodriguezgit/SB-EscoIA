@@ -29,12 +29,17 @@ if lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
   log "El puerto $PORT ya está en uso: EscoIA ya está activo en http://127.0.0.1:$PORT/"
   exit 0
 fi
-if [[ ! -d server/node_modules ]]; then
+# Reinstala dependencias si faltan o si el lockfile cambió (p. ej. tras un git pull)
+needs_ci() { [[ ! -d "$1/node_modules" ]] || [[ "$1/package-lock.json" -nt "$1/node_modules/.package-lock.json" ]]; }
+if needs_ci server; then
   log "Instalando dependencias del servidor…"; (cd server && npm ci --no-audit --no-fund) || { log "ERROR: npm ci en server"; exit 1; }
 fi
-if [[ ! -f ui/dist/index.html ]] || [[ -n "$(find ui/src ui/index.html -newer ui/dist/index.html -print -quit 2>/dev/null)" ]]; then
+if needs_ci ui; then
+  log "Instalando dependencias de la interfaz…"; (cd ui && npm ci --no-audit --no-fund) || log "AVISO: npm ci en ui falló"
+fi
+if [[ ! -f ui/dist/index.html ]] || [[ -n "$(find ui/src ui/index.html ui/vite.config.ts ui/package.json package.json -newer ui/dist/index.html -print -quit 2>/dev/null)" ]]; then
   log "Compilando la interfaz (cambios detectados)…"
-  (cd ui && { [[ -d node_modules ]] || npm ci --no-audit --no-fund; } && npm run build) || log "AVISO: no se pudo compilar la UI; se usa la versión anterior"
+  (cd ui && npm run build) || log "AVISO: no se pudo compilar la UI; se usa la versión anterior"
 fi
 log "Servidor en http://127.0.0.1:$PORT/"
 cd server && exec node --import tsx main.ts

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { request } from "../api";
+import { notifyError } from "../lib/notify";
 import { curriculum, scheduler, biometrics, grades, surveys } from "../lib/shared";
 import type { Row } from "../lib/shared";
 export function PartituraTracker() {
@@ -25,7 +26,7 @@ export function PartituraTracker() {
           .then((r) => {
             if (!disposed) merge(r);
           })
-          .catch(() => {});
+          .catch((e) => notifyError(e, "Historial de actividad"));
       };
       socket.onmessage = (e) => {
         try {
@@ -43,7 +44,9 @@ export function PartituraTracker() {
                 new URL(document.referrer || "http://127.0.0.1:8790").origin,
               );
           }
-        } catch {}
+        } catch (e) {
+          console.warn("[EscoIA] evento no válido", e);
+        }
       };
       socket.onclose = () => {
         setConnected(false);

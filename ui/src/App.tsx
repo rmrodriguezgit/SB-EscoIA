@@ -11,13 +11,19 @@ import { Grades } from "./views/Grades";
 import { SurveyDashboard } from "./views/SurveyDashboard";
 import { Admin } from "./views/Admin";
 import { Respondent } from "./views/Respondent";
+import { Toasts } from "./components/Toasts";
+import { applyTheme, loadTheme, nextTheme, themeLabel, type ThemeChoice } from "./lib/theme";
+export const version = `v${__APP_VERSION__}`;
 export function App() {
   const [user, setUser] = useState<User | null>(null),
     [loading, setLoading] = useState(true),
     [tab, setTab] = useState(
       new URLSearchParams(location.search).get("modulo") || "Inicio",
     ),
-    [health, setHealth] = useState<Row>({});
+    [health, setHealth] = useState<Row>({}),
+    [failure, setFailure] = useState(""),
+    [theme, setTheme] = useState<ThemeChoice>(loadTheme);
+  useEffect(() => applyTheme(theme), [theme]);
   const task = useTask();
   const token = location.pathname.match(
     /^\/responder\/([A-Za-z0-9_-]{43})$/,
@@ -34,7 +40,7 @@ export function App() {
         return request("health");
       })
       .then(setHealth)
-      .catch(() => {})
+      .catch((e) => setFailure(e instanceof Error ? e.message : String(e)))
       .finally(() => setLoading(false));
   }, [token]);
   if (token) return <Respondent token={token} />;
@@ -42,7 +48,11 @@ export function App() {
   if (!user)
     return (
       <main className="public">
-        No se pudo conectar con el servicio local. Recarga EscoIA.
+        <h1>EscoIA {version}</h1>
+        <p role="alert">{failure || "No se pudo conectar con el servicio local."}</p>
+        <p className="muted">
+          Arranca EscoIA con <code>Iniciar-EscoIA.command</code> y recarga esta página.
+        </p>
       </main>
     );
   const admin = user.roles.includes("admin"),
@@ -65,15 +75,18 @@ export function App() {
           : "")
       }
     >
+      <a className="skip-link" href="#contenido">Saltar al contenido</a>
+      <Toasts />
       <aside>
-        <div className="brand">
+        <div className="brand" aria-label={`EscoIA ${version}`}>
           EI<span>EscoIA</span>
         </div>
         <p className="muted">Campus local · México</p>
-        <nav>
+        <nav aria-label="Módulos">
           {tabs.map((t) => (
             <button
               className={tab === t ? "selected" : ""}
+              aria-current={tab === t ? "page" : undefined}
               key={t}
               onClick={() => setTab(t)}
             >
@@ -81,8 +94,21 @@ export function App() {
             </button>
           ))}
         </nav>
+        <div className="sidebar-footer">
+          <button
+            type="button"
+            className="secondary theme-toggle"
+            onClick={() => setTheme(nextTheme[theme])}
+            aria-label={`${themeLabel[theme]}. Cambiar tema`}
+          >
+            {theme === "light" ? "☀︎" : theme === "dark" ? "☾" : "◐"} {themeLabel[theme]}
+          </button>
+          <span className="version-tag" title={`Compilación ${__APP_BUILD__}`}>
+            EscoIA {version} · {__APP_BUILD__}
+          </span>
+        </div>
       </aside>
-      <main>
+      <main id="contenido" tabIndex={-1}>
         <header>
           <p className="eyebrow">
             Administración e investigación universitaria
