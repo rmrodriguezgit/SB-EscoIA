@@ -1,0 +1,1 @@
+{"mode":"local","model":"qwen2.5:3b-instruct-q4_K_M","context":4096,"max_loaded_models":1,"parallel_generations":1,"memory_limit_gib":12.5,"external_providers_enabled":false,"laya_enabled":false,"graph_backend":"sqlite","automatic_promotion":false}

@@ -1,0 +1,106 @@
+[
+  {
+    "repo": "ollama/ollama",
+    "url": "https://github.com/ollama/ollama",
+    "license": "MIT",
+    "archived": false,
+    "last_commit": "42e911bc3d05798cad729cb474bf62f378cb2e26",
+    "date": "2026-10-02T18:52:27Z"
+  },
+  {
+    "repo": "ml-explore/mlx-lm",
+    "url": "https://github.com/ml-explore/mlx-lm",
+    "license": "MIT",
+    "archived": false,
+    "last_commit": "5cfec4cb39deba54210b3ff4d86f2337c7bc10b5",
+    "date": "2026-10-02T08:28:40Z"
+  },
+  {
+    "repo": "mizorewww/laya-mlx",
+    "url": "https://github.com/mizorewww/laya-mlx",
+    "license": "Apache-2.0",
+    "archived": false,
+    "last_commit": "ca5940aa9286dbbdfaacbecbdb7b337295ad36a2",
+    "date": "2026-10-02T03:17:45Z"
+  },
+  {
+    "repo": "magnitudedev/magnitude",
+    "url": "https://github.com/magnitudedev/magnitude",
+    "license": "Apache-2.0",
+    "archived": false,
+    "last_commit": "2a481f7c5d3c78e8e16ddf4f551ba0c13ba9c16f",
+    "date": "2026-10-05T04:17:12Z"
+  },
+  {
+    "repo": "googleworkspace/cli",
+    "url": "https://github.com/googleworkspace/cli",
+    "license": "Apache-2.0",
+    "archived": false,
+    "last_commit": "a3768d0e82ad83cca2da97724e46bea4ff0e6dbd",
+    "date": "2026-03-31T18:51:15Z"
+  },
+  {
+    "repo": "openclaw/gogcli",
+    "url": "https://github.com/openclaw/gogcli",
+    "license": "MIT",
+    "archived": false,
+    "last_commit": "414e2ff8afa281ec3d9f0cdb057bdbc53386db91",
+    "date": "2026-10-01T04:35:53Z"
+  },
+  {
+    "repo": "Graphify-Labs/graphify",
+    "url": "https://github.com/Graphify-Labs/graphify",
+    "license": "Apache-2.0",
+    "archived": false,
+    "last_commit": "35adf432b9d50f6f3d530ab5d7ec316819ef081c",
+    "date": "2026-10-04T21:28:19Z"
+  },
+  {
+    "repo": "lancedb/lancedb",
+    "url": "https://github.com/lancedb/lancedb",
+    "license": "Apache-2.0",
+    "archived": false,
+    "last_commit": "7f5933594f42eeeec1ce73a7ce8e0cd0113cbd82",
+    "date": "2026-10-04T04:30:13Z"
+  },
+  {
+    "repo": "langchain-ai/langgraph",
+    "url": "https://github.com/langchain-ai/langgraph",
+    "license": "MIT",
+    "archived": false,
+    "last_commit": "9a0394d88b2211f299dcd69df92db3480c69ee61",
+    "date": "2026-10-03T12:55:59Z"
+  },
+  {
+    "repo": "microsoft/playwright-mcp",
+    "url": "https://github.com/microsoft/playwright-mcp",
+    "license": "Apache-2.0",
+    "archived": false,
+    "last_commit": "f183dad4a52965583e3cc1d59b88cdc279e2e57d",
+    "date": "2026-09-28T23:12:55Z"
+  },
+  {
+    "repo": "ggml-org/whisper.cpp",
+    "url": "https://github.com/ggml-org/whisper.cpp",
+    "license": "MIT",
+    "archived": false,
+    "last_commit": "60c0be6ac8fa71b1a2ae2dd938a31a34a508e774",
+    "date": "2026-10-02T13:21:13Z"
+  },
+  {
+    "repo": "openclaw/openclaw",
+    "url": "https://github.com/openclaw/openclaw",
+    "license": "MIT",
+    "archived": false,
+    "last_commit": "fa468f6a64c40e2d65664bec00bfbf91f8664edb",
+    "date": "2026-10-05T04:45:06Z"
+  },
+  {
+    "repo": "andrehuang/claude-claw",
+    "url": "https://github.com/andrehuang/claude-claw",
+    "license": "MIT",
+    "archived": false,
+    "last_commit": "84a99521be61177ec77f2ef1a453fee2865b20e5",
+    "date": "2026-03-28T11:49:58Z"
+  }
+]

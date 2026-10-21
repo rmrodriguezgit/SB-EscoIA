@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "escola-ia"
+version = "0.4.2"
+requires-python = ">=3.11"
+dependencies = ["xlrd==2.0.2", "openpyxl==3.1.5", "et-xmlfile==2.0.0"]
+[project.scripts]
+brain = "second_brain.cli:main"
+[tool.setuptools.packages.find]
+where = ["src"]

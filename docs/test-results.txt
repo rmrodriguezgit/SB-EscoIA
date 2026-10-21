@@ -1,0 +1,17 @@
+test_backup_restore (test_core.Acceptance.test_backup_restore) ... ok
+test_correction_removes_old_index_and_vectors (test_core.Acceptance.test_correction_removes_old_index_and_vectors) ... ok
+test_filter_date_project_source (test_core.Acceptance.test_filter_date_project_source) ... ok
+test_forget_every_derivative (test_core.Acceptance.test_forget_every_derivative) ... ok
+test_mcp_search (test_core.Acceptance.test_mcp_search) ... ok
+test_obsolete_excluded (test_core.Acceptance.test_obsolete_excluded) ... ok
+test_obvious_secret_not_persisted (test_core.Acceptance.test_obvious_secret_not_persisted) ... ok
+test_offline_with_sources_and_injection_no_execution (test_core.Acceptance.test_offline_with_sources_and_injection_no_execution) ... ok
+test_persistence_after_restart (test_core.Acceptance.test_persistence_after_restart) ... ok
+test_recovery_checkpoint (test_core.Acceptance.test_recovery_checkpoint) ... ok
+test_subject_code_excludes_loose_keywords (test_core.Acceptance.test_subject_code_excludes_loose_keywords) ... ok
+test_zip_traversal (test_core.Acceptance.test_zip_traversal) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.114s
+
+OK

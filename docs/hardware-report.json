@@ -1,0 +1,18 @@
+{
+  "architecture": "arm64",
+  "macos": "27.0",
+  "chip": "Apple M3",
+  "physical_bytes": "17179869184",
+  "cores": 8,
+  "memory_pressure": "The system has 17179869184 (1048576 pages with a page size of 16384).\n\nStats: \nPages free: 5063 \nPages purgeable: 26 \nPages purged: 670581018 \n\nSwap I/O:\nSwapins: 109562472 \nSwapouts: 115332209 \n\nPage Q counts:\nPages active: 175431 \nPages inactive: 166694 \nPages speculative: 9054 \nPages throttled: 0 \nPages wired down: 196046 \n\nCompressor Stats:\nPages used by compressor: 458859 \nPages decompressed: 8342730938 \nPages compressed: 8536190372 \n\nFile I/O:\nPageins: 212855781 \nPageouts: 1121144 \n\nSystem-wide memory free percentage: 35%",
+  "swap": "vm.swapusage: total = 22528.00M  used = 21308.62M  free = 1219.38M  (encrypted)",
+  "disk_free_bytes": 283468218368,
+  "tools": {
+    "ollama": null,
+    "pdftotext": "/opt/homebrew/bin/pdftotext",
+    "ffmpeg": null,
+    "gws": null,
+    "claude": "/opt/homebrew/bin/claude",
+    "codex": "/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex"
+  }
+}

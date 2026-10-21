@@ -1,0 +1,29 @@
+# Entornos y dependencias
+.venv/
+.venv-*/
+ui/node_modules/
+vendor/
+*.egg-info/
+__pycache__/
+*.pyc
+
+# Datos privados, memoria, modelos y compilados
+data/
+memory/
+ui/dist/
+*.zip
+*.sqlite
+*.sqlite-*
+*.db
+*.log
+*.pid
+*.lock
+!config/uzu-requirements.lock
+
+# Credenciales
+.env
+.env.*
+!.env.example
+
+# Sistema
+.DS_Store

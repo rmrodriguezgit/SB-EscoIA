@@ -1,0 +1,7 @@
+import {useEffect,useState} from 'react';
+export function AcademicConnection({csrf,onConnected}:{csrf:string;onConnected:()=>void}) {
+ const [available,setAvailable]=useState<boolean|null>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState('Comprobando servicio académico…');
+ useEffect(()=>{let alive=true; const check=async()=>{try{const r=await fetch('/api/services');if(!r.ok)throw Error();const s=await r.json();if(alive){setAvailable(s.available);setMessage(s.message);}}catch{if(alive){setAvailable(false);setMessage('No se pudo comprobar el servicio.');}}};void check();const t=setInterval(check,20000);return()=>{alive=false;clearInterval(t);};},[]);
+ async function reconnect(){setBusy(true);setMessage('Comprobando e iniciando el servicio si está detenido…');try{const r=await fetch('/api/services/reconnect',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:'{}'});const s=await r.json();if(!r.ok)throw Error(s.error||'No se pudo recuperar el servicio');setAvailable(s.available);setMessage(s.message);if(s.available)onConnected();}catch(e){setAvailable(false);setMessage(String(e));}finally{setBusy(false);}}
+ return <div className="academic-connection"><span role="status"><span aria-hidden="true">{available===null?'◌':available?'🟢':'🔴'}</span> {message}</span><button disabled={busy||!csrf} onClick={reconnect}>{busy?'Conectando…':available?'Reconectar servicios':'Iniciar servicios'}</button></div>;
+}

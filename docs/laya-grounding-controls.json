@@ -1,0 +1,44 @@
+{
+  "supported": {
+    "engine": "Laya MLX multilingüe",
+    "checks": [
+      {
+        "claim": "LAR105 tiene 32 horas con académico por semestre.",
+        "support_probability": 0.9932,
+        "truncated": false,
+        "usage": {
+          "input_tokens": 476,
+          "output_tokens": 0,
+          "state_tokens": 431,
+          "state_tokens_dropped": 0,
+          "truncated": false,
+          "truncated_questions": []
+        }
+      }
+    ],
+    "passed": true,
+    "coverage_complete": true,
+    "status": "reviewed"
+  },
+  "unsupported": {
+    "engine": "Laya MLX multilingüe",
+    "checks": [
+      {
+        "claim": "LAR105 tiene 900 horas con académico por semestre.",
+        "support_probability": 0.9833,
+        "truncated": false,
+        "usage": {
+          "input_tokens": 477,
+          "output_tokens": 0,
+          "state_tokens": 432,
+          "state_tokens_dropped": 0,
+          "truncated": false,
+          "truncated_questions": []
+        }
+      }
+    ],
+    "passed": true,
+    "coverage_complete": true,
+    "status": "reviewed"
+  }
+}

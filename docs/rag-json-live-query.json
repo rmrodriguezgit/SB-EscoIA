@@ -1,0 +1,69 @@
+{
+  "text": "El nombre de LAR105 es Prácticas Preliminares de la Profesión. Este curso pertenece al semestre 1 y está clasificado como obligatorio en la área de Administración. El contenido del curso se centra en la simulación de negocios y la toma de decisiones empresariales, incluyendo la identificación de habilidades a desarrollar con los simuladores de negocios y el uso de herramientas de inteligencia artificial y aprendizaje automático. [1]",
+  "sources": [
+    {
+      "id": "cee0b65a17dd3f205cd1d4154fdda7f27776459f51dad2b9ca3af2877273e5ca",
+      "document_id": "academic-d85f1e3e36ae4c526f0cdeea",
+      "kind": "document",
+      "name": "bd_planes_escoia_completa.json",
+      "page": 0,
+      "career": "LAR",
+      "text": "LAR105 — Prácticas Preliminares de la Profesión. Semestre 1. Tipo: Obligatoria. Área: Administración. Horas con académico por semestre: 32. Horas independientes por semestre: 0. Créditos: 2. Instalación: Laboratorio de Simulación de Negocios.\nObjetivo: Al término del curso, el estudiante identificará la situación interna y externa de una\norganización, a través de auditorías administrativas enfocadas en la operación de los negocios,\ncon el fin de preparar un proyecto integrador como práctica fundamental en el uso del\nlaboratorio de simulación de negocios.\nContenido temático: I LA SIMULACIÓN DE NEGOCIOS Y PERSPECTIVAS EN LA TOMA DE\nDECISIONES EMPRESARIALES\n1.1 La definición de simuladores de negocios\n1.2 Las etapas y beneficios de aplicación de un simulador\n1.3 Las perspectivas en la toma de decisiones\n1.4 Los tipos de simuladores\n1.5 Los simuladores de negocios más empleados en la profesión\n1.6 Los simuladores de negocios como herramienta para la toma de decisiones gerenciales\n1.7 La identificación de habilidades a desarrollar con los simuladores de negocios\n1.8 El propósito del laboratorio de simulación de negocios en las áreas económico-\nadministrativas\n\nII LA GESTIÓN DE LOS PROCESOS DE NEGOCIOS PARA SU SIMULACIÓN\n2.1 Las áreas de estudio de las Ciencias Económico-Administrativas\n2.1.1 Administración\n2.1.2 Ciencias exactas\n2.1.3 Economía y finanzas\n2.1.4 Tecnologías\n2.1.5 Normativa y legislación\n2.1.6 Actuaría\n2.1.7 Contaduría\n2.1.8 Currícula común\n2.2 La auditoría administrativa en la gestión de procesos de negocios\n2.3 Los tipos fundamentales de la auditoria administrativa: funcional y analítica\n2.4 La arquitectura empresarial\n2.4.1 Estructura organizacional funcional\n2.4.2 Análisis FODA\n2.4.3 Cadena de valor\n2.4.4 Los sistemas de planificación de recursos empresariales (ERP)\n2.4.4.1 La definición y objetivos\n\n\n\n2.4.5 La planeación de recursos empresariales (ERP) genéricos o específicos\n2.4.6 Subsistemas que conforman un ERP\n2.5 El análisis de informes de gestión de procesos de negocios: casos prácticos\nIII LAS TECNOLOGÍAS DE LA INFORMACIÓN\n3.1 La virtualización\n3.1.2 Las herramientas de virtualización\n3.1.3 Las tecnologías de servidores de código abierto\n3.2 La implementación de un sitio web\n3.2.1 Las herramientas para implementar un sitio web\n3.3 El uso de base de datos y herramientas de administración\n3.3.1 La implementación de una base de datos en un servidor virtualidad\n3.4 La visualización de la información\n3.4.1 Las herramientas para el reporte de la información en un servidor virtual\n\nIV EL ANÁLISIS DE DATOS\n4.1 El uso de software de análisis estadístico\n4.1.1 Las características del análisis\n4.1.2 Los ejemplos de uso\n4.2 El uso de la minería de datos\n4.2.1 La recopilación, proceso y análisis de datos\n4.3 El uso de herramientas de simulación\n4.3.1 La simulación de escenarios\n4.3.2 Los ejemplos de uso\n4.4 El uso de inteligencia artificial y aprendizaje automático\n4.4.1 El uso de la inteligencia artificial en los negocios\n4.4.2 Los modelos de aprendizaje automático\n\nV EL APRENDIZAJE CONTINUO\n5.1 El aprendizaje durante toda la vida (Lifelong learning)\n5.2 La visualización de un plan de aprendizaje continuo\n5.3 El coaching y el mentoring\n5.4 Los MOC´S\n5.5 La importancia de obtener una certificación\n5.6 Los recursos digitales de formación",
+      "citation": "JSON curricular EscoIA · LAR · semestre 1"
+    }
+  ],
+  "mode": "Qwen + Laya MLX",
+  "validation": {
+    "engine": "Laya MLX multilingüe",
+    "checks": [
+      {
+        "claim": "El nombre de LAR105 es Prácticas Preliminares de la Profesión.",
+        "support_probability": 0.9926,
+        "truncated": false,
+        "usage": {
+          "input_tokens": 451,
+          "output_tokens": 0,
+          "state_tokens": 406,
+          "state_tokens_dropped": 0,
+          "truncated": false,
+          "truncated_questions": []
+        }
+      },
+      {
+        "claim": "Este curso pertenece al semestre 1 y está clasificado como obligatorio en la área de Administración.",
+        "support_probability": 0.9725,
+        "truncated": false,
+        "usage": {
+          "input_tokens": 481,
+          "output_tokens": 0,
+          "state_tokens": 436,
+          "state_tokens_dropped": 0,
+          "truncated": false,
+          "truncated_questions": []
+        }
+      },
+      {
+        "claim": "El contenido del curso se centra en la simulación de negocios y la toma de decisiones empresariales, incluyendo la identificación de habilidades a desarrollar con los simuladores de negocios y el uso de herramientas de inteligencia artificial y aprendizaje automático.",
+        "support_probability": 0.9918,
+        "truncated": false,
+        "usage": {
+          "input_tokens": 495,
+          "output_tokens": 0,
+          "state_tokens": 450,
+          "state_tokens_dropped": 0,
+          "truncated": false,
+          "truncated_questions": []
+        }
+      }
+    ],
+    "passed": true,
+    "coverage_complete": true,
+    "status": "reviewed",
+    "deterministic": {
+      "passed": true,
+      "reason": "Referencias y códigos comprobados; revisión semántica corresponde a Laya"
+    }
+  },
+  "run_id": "fd1c1ca739944f6590c17d62d55a8160",
+  "career": "LAR"
+}
