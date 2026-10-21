@@ -26,3 +26,6 @@ __pycache__/
 
 # Sistema
 .DS_Store
+
+# Registros locales
+logs/

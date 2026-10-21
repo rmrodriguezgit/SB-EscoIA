@@ -1,9 +1,10 @@
 #!/bin/bash
-# Lanzador de EscoIA para arranque automático (launchd) o manual.
+# Lanzador de EscoIA (lo usa Iniciar-EscoIA.command). Registro en logs/escoia.log.
 # Verifica requisitos, reconstruye la UI si cambió y deja todo en el log.
 set -uo pipefail
 ROOT="$(cd -- "$(dirname -- "$0")/.." && pwd -P)"
 cd "$ROOT" || exit 78
+mkdir -p logs && exec > >(tee -a logs/escoia.log) 2>&1
 export PATH="${ESCOIA_NODE_DIR:+$ESCOIA_NODE_DIR:}/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 log() { echo "[$(date '+%F %T')] $*"; }
 envval() { grep -E "^$1=" .env 2>/dev/null | tail -1 | cut -d= -f2-; }

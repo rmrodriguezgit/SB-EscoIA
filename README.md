@@ -72,9 +72,15 @@ Las versiones npm son rangos; conservar el lockfile generado al instalarlas.
 La compilación con WITH_WHISPER requiere encabezados, biblioteca y pesos externos.
 
 ## Acceso local y arranque automático (macOS)
-- Manual: `./arrancar-academico.sh` y abrir http://127.0.0.1:8787/ (o http://localhost:8787/).
-- Automático: doble clic en `Instalar-Arranque-EscoIA.command`. Instala el servicio de usuario
-  `mx.escoia.academico` (LaunchAgent): arranca al iniciar sesión, se reinicia si falla,
-  recompila la UI si cambió y abre el navegador. Registro: `~/Library/Logs/EscoIA.log`.
-- Quitarlo: `Desinstalar-Arranque-EscoIA.command` (no borra datos).
+| Archivo (doble clic) | Qué hace |
+|---|---|
+| `Iniciar-EscoIA.command` | Arranca EscoIA en una ventana de Terminal y abre http://127.0.0.1:8787/ (Ctrl+C lo detiene). |
+| `Instalar-Arranque-EscoIA.command` | Registra `Iniciar-EscoIA.command` como ítem de inicio de sesión y lo arranca ya. |
+| `Desinstalar-Arranque-EscoIA.command` | Quita el arranque automático (no borra datos). |
+
+- También manual: `./arrancar-academico.sh` → http://127.0.0.1:8787/ o http://localhost:8787/.
+- Registro: `logs/escoia.log` (excluido de Git). El lanzador verifica Node, `.env`, núcleo nativo,
+  carpeta de la BD y puerto; recompila la UI si `ui/src` cambió.
+- ¿Por qué no un servicio launchd? macOS (privacidad TCC) impide a los servicios de fondo leer
+  `~/Documents` sin "Acceso total al disco" (`Operation not permitted`). Terminal sí tiene acceso.
 - Auditoría de sistemas y plan de mejora: `docs/AUDITORIA-2026-10-20.md`.
