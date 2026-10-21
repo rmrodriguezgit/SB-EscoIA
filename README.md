@@ -70,3 +70,11 @@ y procesamiento de cámara tampoco ejecutados.
 
 Las versiones npm son rangos; conservar el lockfile generado al instalarlas.
 La compilación con WITH_WHISPER requiere encabezados, biblioteca y pesos externos.
+
+## Acceso local y arranque automático (macOS)
+- Manual: `./arrancar-academico.sh` y abrir http://127.0.0.1:8787/ (o http://localhost:8787/).
+- Automático: doble clic en `Instalar-Arranque-EscoIA.command`. Instala el servicio de usuario
+  `mx.escoia.academico` (LaunchAgent): arranca al iniciar sesión, se reinicia si falla,
+  recompila la UI si cambió y abre el navegador. Registro: `~/Library/Logs/EscoIA.log`.
+- Quitarlo: `Desinstalar-Arranque-EscoIA.command` (no borra datos).
+- Auditoría de sistemas y plan de mejora: `docs/AUDITORIA-2026-10-20.md`.
