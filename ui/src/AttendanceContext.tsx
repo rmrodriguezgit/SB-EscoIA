@@ -598,7 +598,7 @@ export function AttendanceContext({
         <label>Mes <input type="month" value={reportMonth} onChange={e => setReportMonth(e.target.value)} /></label>
         <button disabled={busy} onClick={() => void act(async () => setReport(await request(`attendance/report?teacher=${teacher}&month=${reportMonth}`)))}>Consultar reporte</button>
         {report && <>
-          <p>1 = asistencia · 0 = falta · vacío = clase futura o cancelada. {report.note}</p>
+          <p>1 = asistencia · 0 = falta · J = falta justificada (no suma faltas) · vacío = clase futura o cancelada. {report.note}</p>
           {report.matrix.map((g:any) => <section key={g.group + g.subject}>
             <h4>{g.group} · {g.subject}</h4>
             <button onClick={() => {

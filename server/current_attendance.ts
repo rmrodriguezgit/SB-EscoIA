@@ -64,6 +64,19 @@ export function ensureCurrent(native: Native, teacherId: number, offeringId?: nu
         if (!existing.cancelled && !existing.closed) active.push(existing.id);
         continue;
       }
+      // Otro grupo del mismo docente ya ocupa este bloque: mensaje claro en vez
+      // del error SQL 'schedule conflict' del trigger.
+      const clash = schedules.find(
+        (s) =>
+          s.offering_id !== chosen.id &&
+          !s.cancelled &&
+          s.starts < block.ends &&
+          s.ends > block.starts,
+      );
+      if (clash)
+        throw Error(
+          `Este bloque ya está confirmado para otro grupo (${clash.group_code ?? "oferta " + clash.offering_id}); cancela esa sesión antes de elegir otro grupo`,
+        );
       if (!internal) {
         const result = await native.call("room_create", [
           `Registro de asistencia (docente ${teacherId})`,
@@ -84,7 +97,9 @@ export function ensureCurrent(native: Native, teacherId: number, offeringId?: nu
       candidates,
       message: active.length
         ? "Clase confirmada para asistencia"
-        : candidates.length ? "Confirma el grupo sugerido por el horario" : "La clase ya está cerrada o cancelada",
+        : offeringId
+          ? "La clase ya está cerrada o cancelada"
+          : "Confirma el grupo sugerido por el horario",
     };
   });
   chain = task.then(
