@@ -1,0 +1,20 @@
+BEGIN IMMEDIATE;
+INSERT INTO programs VALUES(1,'Actuaría');
+INSERT INTO subjects(id,code,name,weekly_hours) VALUES(1,'LAR105','Prácticas Preliminares de la Profesión',4);
+INSERT INTO subjects(id,code,name,weekly_hours) VALUES(2,'FIN101','Finanzas',4);
+INSERT INTO curriculum VALUES(1,1,1),(1,2,1);
+INSERT INTO teachers VALUES(1,NULL,'Docente de demostración','Licenciatura en Finanzas',5);
+INSERT INTO teacher_subjects VALUES(1,1,1),(1,2,1);
+INSERT INTO students VALUES(1,NULL,'DEMO001','Estudiante de demostración');
+INSERT INTO groups VALUES(1,'101',1,'morning');
+INSERT INTO rooms VALUES(1,'Aula A',30),(2,'Aula B',20);
+INSERT INTO offerings VALUES(1,2,1,1,'2026-2');
+INSERT INTO enrollments VALUES(1,1);
+INSERT INTO course_units VALUES(1,2,1,'Fundamentos financieros','["Valor del dinero en el tiempo","Interés simple y compuesto"]');
+INSERT INTO course_units VALUES(2,2,2,'Evaluación de proyectos','["Valor presente neto","Tasa interna de retorno"]');
+INSERT INTO documents VALUES(1,'demo','finanzas-demo.txt',2);
+INSERT INTO rag_chunks(id,document_id,page,text) VALUES(1,1,1,'Finanzas. Unidad 1: Fundamentos financieros. Valor del dinero en el tiempo. Interés simple y compuesto. Unidad 2: Evaluación de proyectos. Valor presente neto y tasa interna de retorno. Documento de demostración, sin referencias bibliográficas.');
+INSERT INTO availability(teacher_id,slot) SELECT 1,value FROM json_each('[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39]');
+INSERT INTO group_availability SELECT 1,value FROM json_each('[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39]');
+
+COMMIT;
