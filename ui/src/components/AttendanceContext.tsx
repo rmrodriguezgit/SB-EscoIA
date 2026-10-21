@@ -1,7 +1,7 @@
 import { WeeklyTimetable } from "./WeeklyTimetable";
 import { AcademicFileImport } from "./AcademicFileImport";
 import React, { useState, useEffect, useRef } from "react";
-import { request } from "./api";
+import { request } from "../api";
 export function AttendanceContext({
   onSession,
   onClass,

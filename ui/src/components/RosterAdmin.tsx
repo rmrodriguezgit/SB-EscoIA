@@ -1,5 +1,5 @@
 import {useEffect,useState} from 'react';
-import {request} from './api';
+import {request} from "../api";
 type Row=Record<string,any>;
 export function RosterAdmin({onChanged}:{onChanged:()=>void}) {
  const [offers,setOffers]=useState<Row[]>([]),[students,setStudents]=useState<Row[]>([]),[members,setMembers]=useState<Row[]>([]);

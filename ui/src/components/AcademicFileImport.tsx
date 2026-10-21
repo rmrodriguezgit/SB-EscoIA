@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { request, upload } from "./api";
+import { request, upload } from "../api";
 export function AcademicFileImport({
   kind,
   teacherId,
