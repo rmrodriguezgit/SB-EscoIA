@@ -57,9 +57,9 @@ class Handler(BaseHTTPRequestHandler):
                 if path=='/api/source':
                     mid=parse_qs(url.query).get('id',[''])[0];rows=b.rows('SELECT path,name FROM documents WHERE id=?',(mid,))
                     if not rows:return self.send({'error':'Fuente inexistente'},404)
-                    p=Path(rows[0]['path'])
-                    if not p.is_relative_to(self.server.home/'data/sources'):return self.send({'error':'Fuente inválida'},403)
-                    data=p.read_bytes();self.send_response(200);self.send_header('Content-Type','application/json; charset=utf-8' if p.suffix=='.json' else 'application/pdf');self.send_header('Content-Length',str(len(data)));self.end_headers();self.wfile.write(data);return
+                    p=Path(rows[0]['path']).resolve()  # resolve: impide escapar con '..' o enlaces simbólicos
+                    if not p.is_relative_to((self.server.home/'data/sources').resolve()) or not p.is_file():return self.send({'error':'Fuente inválida'},403)
+                    data=p.read_bytes();self.send_response(200);self.send_header('Content-Type','application/json; charset=utf-8' if p.suffix=='.json' else 'application/pdf');self.send_header('Content-Length',str(len(data)));self.send_header('X-Content-Type-Options','nosniff');self.send_header('Cache-Control','no-store');self.end_headers();self.wfile.write(data);return
                 return self.send({'error':'Ruta inexistente'},404)
             finally:b.close()
         target=self.server.home/'ui/dist'/path.lstrip('/')
