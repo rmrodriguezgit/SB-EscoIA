@@ -3,7 +3,7 @@ import asyncio,json,sys,os
 from pathlib import Path
 for key in ('MIRAI_API_KEY','OPENAI_API_KEY','ANTHROPIC_API_KEY','GEMINI_API_KEY','XAI_API_KEY','BASETEN_API_KEY','OPENROUTER_API_KEY'):
  os.environ.pop(key,None)
-from uzu import Engine,EngineConfig,ChatConfig,ChatMessage,ChatReplyConfig,Grammar,ReasoningEffort,DownloadPhase,DownloadManagerType
+from uzu import Engine,EngineConfig,ChatConfig,ChatMessage,ChatReplyConfig,ContextLength,Grammar,ReasoningEffort,DownloadPhase,DownloadManagerType
 HOME=Path(__file__).resolve().parents[1]
 MODEL='alibaba:qwen3.5:0.8b:mirai:mirai-m:4'
 async def main():
@@ -29,7 +29,8 @@ async def main():
   message=factory().with_text(item['content'])
   if item['role']=='system':message=message.with_reasoning_effort(ReasoningEffort.Disabled)
   messages.append(message)
- session=await engine.chat(model,ChatConfig.create().with_context_length(4096))
+ # uzu 0.6.3 exige ContextLength; un int lanza TypeError antes de cargar pesos.
+ session=await engine.chat(model,ChatConfig.create().with_context_length(ContextLength.Custom(4096)))
  reply_config=ChatReplyConfig.create().with_token_limit(min(1200,int(payload.get('options',{}).get('num_predict',900))))
  if isinstance(payload.get('format'),dict):reply_config=reply_config.with_grammar(Grammar.JsonSchema(json.dumps(payload['format'])))
  replies=await session.reply(messages,reply_config)
