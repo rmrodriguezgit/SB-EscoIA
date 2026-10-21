@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { request } from "../api";
 import { notifyError } from "../lib/notify";
+import { ConstellationView } from "../constellation/ConstellationView";
 import { curriculum, scheduler, biometrics, grades, surveys } from "../lib/shared";
 import type { Row } from "../lib/shared";
-export function PartituraTracker() {
+export function PartituraTracker({ health }: { health: Row }) {
   const [events, setEvents] = useState<Row[]>([]),
     [connected, setConnected] = useState(false);
   useEffect(() => {
@@ -70,11 +71,19 @@ export function PartituraTracker() {
   return (
     <section>
       <div className="section-title">
-        <h2>Partitura · actividad de agentes</h2>
+        <h2>Constelación de agentes</h2>
         <span className={connected ? "badge" : "badge off"}>
           {connected ? "En vivo" : "Reconectando"}
         </span>
       </div>
+      <p className="muted">
+        Cada estrella es un agente o modelo local; las líneas son la ruta real de
+        una solicitud. Las estrellas brillan y un cometa recorre la ruta cuando
+        trabajan.
+      </p>
+      <ConstellationView events={events} health={health} connected={connected} />
+      <details className="subpanel">
+        <summary>Bitácora de actividad ({events.length})</summary>
       <ol className="events" aria-live="polite">
         {events
           .slice(-12)
@@ -93,6 +102,7 @@ export function PartituraTracker() {
       {!events.length && (
         <p className="muted">Las operaciones aparecerán aquí.</p>
       )}
+      </details>
     </section>
   );
 }

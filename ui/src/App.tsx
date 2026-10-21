@@ -101,7 +101,7 @@ export function App() {
             onClick={() => setTheme(nextTheme[theme])}
             aria-label={`${themeLabel[theme]}. Cambiar tema`}
           >
-            {theme === "light" ? "☀︎" : theme === "dark" ? "☾" : "◐"} {themeLabel[theme]}
+            {themeLabel[theme]}
           </button>
           <span className="version-tag" title={`Compilación ${__APP_BUILD__}`}>
             EscoIA {version} · {__APP_BUILD__}
@@ -119,7 +119,7 @@ export function App() {
           </p>
         </header>
         <div hidden={new URLSearchParams(location.search).get("embed") === "1"}>
-          <PartituraTracker />
+          <PartituraTracker health={health} />
         </div>
         {tab === "Inicio" ? (
           <Home health={health} />

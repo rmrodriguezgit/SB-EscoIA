@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import tailwindcss from "@tailwindcss/vite";
+import vue from "@vitejs/plugin-vue";
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 // Versión única del sistema: package.json de la raíz del proyecto.
@@ -11,7 +12,7 @@ try {
   /* sin git: se usa "local" */
 }
 export default defineConfig({
-  plugins: [tailwindcss()],
+  plugins: [tailwindcss(), vue()],
   define: {
     __APP_VERSION__: JSON.stringify(version),
     __APP_BUILD__: JSON.stringify(`${build} · ${new Date().toISOString().slice(0, 10)}`),
