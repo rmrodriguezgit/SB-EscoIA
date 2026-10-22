@@ -41,10 +41,17 @@ Actualización 2026-10-21 (memoria): Qwen3.5 0.8B es híbrido, con 18 capas Delt
 
 Medición 2026-10-21: con 10,77 GiB ocupados y presión normal, `scripts/medir-uzu.py` midió un pico del proceso (peak memory footprint, incluida la memoria Metal) de **0,724 GiB con contexto 1024 y 0,723 GiB con 4096**. Uzu informa 0,503 GiB, en línea con la estimación por arquitectura (0,49). El contexto no cambia el pico. Reserva final: 0,85 GiB (pico +17 %). Generación: 46–56 tokens en 0,43–0,46 s con los pesos ya en caché de disco.
 
-Salida JSON (2026-10-21): con uzu 0.6.3, `ChatReplyConfig.with_grammar(Grammar.JsonSchema(...))` se acepta (`cfg.grammar` no es `None`) pero no restringe la salida. Con el esquema de `probar-uzu.py`, el modelo devolvió un bloque ```json con otras claves, cortado por el límite de tokens, o texto plano, según el mensaje de sistema. Hasta averiguar la causa, `scripts/uzu_worker.py`:
+Salida JSON (2026-10-21): **uzu 0.6.3 no aplica ninguna gramática** con este modelo. Se probaron seis variantes en una carga: el ejemplo oficial literal del README, `JsonSchema` con muestreo greedy, `JsonAny`, `Regex`, otro orden de configuración y el constructor directo de `ChatReplyConfig`. `cfg.grammar` se acepta, pero la salida no se restringe: hasta la `Regex`, que prohíbe empezar por ```, devolvió un bloque ```json.
 
-1. Mantiene la gramática por si una versión posterior la aplica.
-2. Añade el esquema al último mensaje del usuario, pidiendo solo JSON sin bloques de código.
-3. Valida la salida con `coerce_json`: quita los bloques de código, busca el primer objeto que cumpla `required`, tipos (también los de los elementos de un array) y `additionalProperties:false`, y no inventa campos. Solo si el esquema tiene un único campo de texto acepta texto plano como valor de ese campo. Si nada cumple, falla con un error claro en lugar de `JSONDecodeError`.
+Con el esquema pegado en el prompt, la tasa era de 17/20 (85 %). El modelo 0.8B copiaba claves del JSON Schema (`"type": "object"`, `"tipo": "string"`) o renombraba el campo (`mensaje`, `response`). `scripts/uzu_worker.py` (`answer`):
 
-Probado con pruebas unitarias sobre las salidas reales observadas. Pendiente: la prueba en vivo (`probar-uzu.py`) y el diagnóstico de la gramática con variantes (ejemplo oficial literal, `Grammar.JsonAny`, `Grammar.Regex`, muestreo greedy). El control de memoria bloqueó la carga: 12,15–12,40 GiB + 0,85 de reserva > 12,5. No se eludió.
+1. Mantiene `Grammar.JsonSchema` por si una versión posterior la aplica.
+2. Pide en el prompt una **plantilla** con las claves (`{"respuesta": "..."}`), no el JSON Schema.
+3. Valida con `coerce_json`:
+   - quita los bloques de código y busca el primer objeto con `required` y tipos válidos (también los de los elementos de un array);
+   - descarta las claves que no están en el esquema y, ante claves duplicadas, se queda con la primera aparición;
+   - nunca inventa ni adivina campos renombrados;
+   - acepta texto plano solo si el esquema tiene un único campo de texto.
+4. Si falla, **reintenta una vez** con la salida anterior, un recordatorio de la plantilla y muestreo greedy. Si vuelve a fallar, lanza un error con la última salida.
+
+Medición tras el cambio, con 8,4–9,3 GiB ocupados y presión normal: **50/50** llamadas en serie (49 a la primera, 1 con reintento, ~1,0 s por llamada) y **10/10** ejecuciones de `probar-uzu.py` (1,14–1,24 s cada una, con el control de memoria en cada carga). El worker informa `attempts` en su salida.

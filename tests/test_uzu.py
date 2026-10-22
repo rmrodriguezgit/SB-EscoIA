@@ -37,7 +37,18 @@ class UzuJsonTests(unittest.TestCase):
   with self.assertRaisesRegex(ValueError,'esquema'):worker.coerce_json('```json\n{\n  "media_aritmetica": {\n    "definicion": "Es un',ONE)
   with self.assertRaisesRegex(ValueError,'esquema'):worker.coerce_json('{"answer": "x", "source_ids": ["1"]}',ANSWER)
   with self.assertRaisesRegex(ValueError,'esquema'):worker.coerce_json('{"answer": "x"}',ANSWER)
- def test_no_extra_fields(self):
-  with self.assertRaisesRegex(ValueError,'esquema'):worker.coerce_json('{"respuesta": "a", "extra": 1}',ONE)
- def test_prompt_mentions_schema(self):
-  self.assertIn('"respuesta"',worker.schema_prompt(ONE))
+ def test_extra_keys_dropped_never_invented(self):
+  # Fallo real capturado: el modelo copia "type":"object" del esquema.
+  self.assertEqual(json.loads(worker.coerce_json('{\n  "respuesta": "La media es la suma entre n.",\n  "type": "object"\n}',ONE)),{'respuesta':'La media es la suma entre n.'})
+  self.assertEqual(json.loads(worker.coerce_json('{"answer": "x", "source_ids": [2], "extra": 1}',ANSWER)),{'answer':'x','source_ids':[2]})
+ def test_duplicate_key_keeps_first(self):
+  # Fallo real capturado: la clave aparece dos veces y la segunda es un booleano.
+  self.assertEqual(json.loads(worker.coerce_json('```json\n{\n"respuesta": "La media es la suma entre n.",\n"respuesta": true\n}\n```',ONE)),{'respuesta':'La media es la suma entre n.'})
+ def test_renamed_keys_rejected(self):
+  # Fallos reales capturados: claves renombradas; no se adivina el campo.
+  with self.assertRaisesRegex(ValueError,'esquema'):worker.coerce_json('```json\n{\n    "tipo": "string",\n    "mensaje": "La media..."\n}\n```',ONE)
+  with self.assertRaisesRegex(ValueError,'esquema'):worker.coerce_json('```json\n{"response": "La media...", "type": "object"}\n```',ONE)
+ def test_prompt_uses_template_not_schema(self):
+  prompt=worker.schema_prompt(ANSWER)
+  self.assertIn('{"answer": "...", "source_ids": []}',prompt)
+  self.assertNotIn('"type"',prompt)
