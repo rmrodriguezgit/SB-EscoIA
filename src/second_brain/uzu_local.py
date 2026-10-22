@@ -3,8 +3,8 @@ import json,subprocess,threading
 from pathlib import Path
 HOME=Path(__file__).resolve().parents[2]
 MODEL='uzu:qwen3.5:0.8b:4bit'
-# Estimado 2026-10-21: pesos 0,39 + runtime 0,03 (medido) + KV 4096 0,05 + DeltaNet 0,02 = 0,49 GiB; +60 % para búferes de prefill/logits sin medir.
-RESERVE_GIB=0.8
+# Medido 2026-10-21 (Quantlabs-SB-API/scripts/medir-uzu.py): pico del proceso 0,724 GiB con contexto 1024 y 4096; reserva = pico +17 %.
+RESERVE_GIB=0.85
 LOCK=threading.Lock()
 def available():return (HOME/'.venv-uzu/bin/python').exists() and (HOME/'data/uzu-ready.json').exists()
 def request(path,payload=None,timeout=120):
