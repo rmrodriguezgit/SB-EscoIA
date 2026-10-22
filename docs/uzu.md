@@ -17,7 +17,7 @@ El instalador debe finalizar con `downloaded`; un error no crea la marca de disp
 
 ## Recursos y seguridad
 
-Una generación local activa, contexto de 4096, hasta 1200 tokens de salida y máximo 120 segundos. Cada petición ejecuta un proceso aislado que termina y libera sus pesos antes de LAYA. La reserva inicial conservadora es 1,5 GiB y se mantienen las comprobaciones de presión de memoria. Uzu acelera inferencia con Metal; no amplía la RAM física ni garantiza eliminar swap.
+Una generación local activa, contexto de 4096, hasta 1200 tokens de salida y máximo 120 segundos. Cada petición ejecuta un proceso aislado que termina y libera sus pesos antes de LAYA. La reserva es 0,8 GiB (`uzu_local.RESERVE_GIB`; antes 1,5 GiB, sin medir) y se mantienen las comprobaciones de presión de memoria. Uzu acelera inferencia con Metal; no amplía la RAM física ni garantiza eliminar swap.
 
 Pesos y registro: `~/.cache/mirai` (ruta impuesta por Uzu). El descargador Universal evita el fallo del descargador nativo observado en este entorno. No se configuran proveedores de nube en el proceso Uzu. Descarga inicial requiere internet; conversaciones posteriores emplean el modelo local. LAYA conserva su runtime dedicado.
 
@@ -36,3 +36,5 @@ Registra tiempo total (incluye carga fría) y comprueba JSON no vacío. No mide 
 Actualización 2026-10-12: descarga completada y estado `Downloaded` comprobado. El adaptador informa el modelo disponible. La prueba protegida de generación se detuvo antes de cargar pesos porque `kern.memorystatus_vm_pressure_level` devuelve Operation not permitted en este entorno. No se ha medido aceleración ni calidad.
 
 Actualización 2026-10-21: `scripts/uzu_worker.py` fallaba antes de cargar pesos con uzu 0.6.3 (`with_context_length` exige `ContextLength`, no un entero: `TypeError ... not an instance of 'ContextLength'`). Corregido con `ContextLength.Custom(4096)`. Las mismas llamadas de Uzu (contexto, límite de tokens y razonamiento desactivado) generaron correctamente desde Quantlabs-SB-API: 33 tokens en 3,4 s con carga en frío. La generación desde EscoIA con `scripts/probar-uzu.py` sigue pendiente porque el control de memoria la bloqueó (12,59 GiB + 1,5 GiB de reserva > 12,5 GiB); no se eludió. La salida con `Grammar.JsonSchema` (`format`) tampoco se ha probado aún.
+
+Actualización 2026-10-21 (memoria): Qwen3.5 0.8B es híbrido, con 18 capas DeltaNet de estado fijo y 6 de atención con 2 cabezas KV. La caché KV ocupa ~12 KB por token (48 MiB con 4096 de contexto), así que reducir el contexto apenas ahorra memoria y se mantiene en 4096. Estimación: pesos 0,39 GiB + runtime Uzu 0,03 GiB (medido sin pesos) + KV 0,05 + estado DeltaNet 0,02 = 0,49 GiB. La reserva baja de 1,5 a 0,8 GiB, con un margen para búferes de prefill y logits (vocabulario de 248 k) que aún no se han medido. El pico real se medirá con `Quantlabs-SB-API/scripts/medir-uzu.py` cuando haya margen bajo el límite de 12,5 GiB.

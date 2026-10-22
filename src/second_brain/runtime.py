@@ -80,7 +80,8 @@ def memory_budget(stats,reserve_gib,pressure=1):
 def model_reserve_gib():
     model=local_model()
     context=int(os.environ.get('BRAIN_CONTEXT','4096'))
-    return {'uzu:qwen3.5:0.8b:4bit':1.5,'qwen2.5:1.5b-instruct-q4_K_M':1.5,'qwen2.5:3b-instruct-q4_K_M':2.5,'qwen2.5:7b-instruct-q4_K_M':5.5}.get(model,6.0)+max(0,context-4096)*0.00015
+    from .uzu_local import RESERVE_GIB as UZU_RESERVE
+    return {'uzu:qwen3.5:0.8b:4bit':UZU_RESERVE,'qwen2.5:1.5b-instruct-q4_K_M':1.5,'qwen2.5:3b-instruct-q4_K_M':2.5,'qwen2.5:7b-instruct-q4_K_M':5.5}.get(model,6.0)+max(0,context-4096)*0.00015
 
 def assert_resources(reserve_gib=None,force_local=False):
     from . import remote_ai

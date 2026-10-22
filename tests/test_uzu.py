@@ -15,4 +15,6 @@ class UzuTests(unittest.TestCase):
   with patch.object(uzu_local,'available',return_value=False):
    with self.assertRaisesRegex(ValueError,'preparar'):inference.select_model(uzu_local.MODEL)
  def test_memory_reserve(self):
-  with patch.object(runtime,'local_model',return_value=uzu_local.MODEL):self.assertGreaterEqual(runtime.model_reserve_gib(),1.5)
+  with patch.object(runtime,'local_model',return_value=uzu_local.MODEL):self.assertGreaterEqual(runtime.model_reserve_gib(),0.8)
+  # Nunca por debajo del cálculo mínimo de pesos+runtime+KV+estado (0,49 GiB).
+  self.assertGreater(uzu_local.RESERVE_GIB,0.49)
