@@ -38,3 +38,15 @@ Claude-Claw es ambiguo: se examinó específicamente andrehuang/claude-claw, una
 LLMLX ([repositorio](https://github.com/rmrodriguezgit/LLMLX)) es la app de barra de menú LocalLLM: gateway SwiftNIO sobre su propio Ollama (127.0.0.1:11501) con breaker de RAM, cola de prioridad y telemetría. EscoIA usa su API nativa Ollama en `127.0.0.1:11500` (`LLMLX_HOST` solo admite localhost), con `X-Client-App: escoia`, `X-Priority: high`, `think:false` y `keep_alive:0`. No inicia, configura ni actualiza la app. Los embeddings siguen en el Ollama de EscoIA (11434). Un 429 de LLMLX (poca RAM o cola llena) se muestra como error; no se reintenta en silencio.
 
 Desde 2026-11-15 EscoIA solo ofrece LLMLX: el motor remoto Quant-AI, Uzu y los Qwen 2.5 de Ollama no aparecen en el selector ni se aceptan en `inference.select_model` (el código permanece). `qwen3.5:4b` usa el runner MLX de Ollama, que responde `501 structured output is unavailable` a `format`; `llmlx_local` reintenta sin `format` con la plantilla JSON y la validación estricta del respaldo de Uzu (`scripts/uzu_worker.py`), con un reintento y sin inventar campos. Si LAYA no cabe en memoria o no está instalada, la respuesta de LLMLX se entrega con las comprobaciones de reglas y el modo `Qwen · LLMLX · sin revisión LAYA`.
+
+## Reingeniería 2026-11-16 (ver `docs/reingenieria.md`)
+
+| Integración | Estado |
+|---|---|
+| Perfiles Administración/Docente (8787) y proxy `/api/profile` | Verificado (cambio de perfil en navegador; aislamiento probado con curl) |
+| Interpretación estadística con LLMLX anclada a cifras | Verificado con qwen3.5 4B |
+| Compactación de sesión, triangulación y recursos del Copiloto con LLMLX | Configurado sin probar en vivo (cubierto por pruebas con modelo simulado) |
+| Embeddings de la biblioteca (bge-m3 vía Ollama) | Configurado sin probar; hoy 0 embeddings, búsqueda léxica |
+| Ventana nativa «Explorar» (preload + IPC) | Configurado sin probar a mano; respaldo web verificado |
+| Recuadro de detección facial en vivo y captura multiángulo | Pendiente (requiere cambio en face_extract) |
+

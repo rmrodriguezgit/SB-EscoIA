@@ -111,3 +111,118 @@ Registro por fases de la reingeniería solicitada el 2026-11-16. Cada fase indic
   - `ipcMain.handle("escoia:open-window")` valida la vista y el origen y crea una `BrowserWindow` con `contextIsolation`, `sandbox` y sin Node, una por vista.
   - En la web hay respaldo con `window.open('/?vista=cuerdas')`, y si se bloquea, overlay en la misma página.
   - **Verificado** el respaldo web y la vista `?vista=cuerdas` en el navegador. La ventana nativa por IPC está **configurada sin probar** a mano dentro de Electron.
+
+## Fase 4 · Módulos
+
+### Investigaciones (antes Encuestas)
+
+**Cuantitativo** (`research_worker.hypothesis_test`)
+- Corre en el subproceso aislado con scipy (`.venv-research`), igual que el análisis existente.
+- **Pruebas paramétricas**
+  - t de una muestra, t independientes (Student y Welch) y t pareadas.
+  - ANOVA de un factor.
+  - Pearson y regresión lineal simple.
+- **Pruebas no paramétricas**
+  - Mann-Whitney U y Wilcoxon.
+  - Kruskal-Wallis y Spearman.
+  - χ² de independencia y χ² de bondad de ajuste.
+- Cada prueba devuelve estadístico, p, gl, tamaño del efecto con su magnitud, descriptivos, supuestos y avisos (Levene, esperadas < 5, post hoc).
+- **Interpretación con el LLM local**
+  - Se descarta si cita un número que no está en el resultado y, en ese caso, se entrega la interpretación determinista.
+  - El prompt prohíbe afirmar que los supuestos se cumplen.
+  - **Verificado** con LLMLX qwen3.5 4B en 13 s.
+
+**Cualitativo** (Izcara Palacios)
+- Diseño: entrevista en profundidad, grupo focal u observación participante, con guion y criterios del muestreo intencional.
+- Informantes con alias, sin nombres reales.
+- Curva de **saturación teórica**: se alcanza cuando *k* entrevistas seguidas no aportan códigos nuevos.
+- Códigos **abiertos → axiales → emergentes**, y matriz categoría × informante.
+
+**Triangulación**
+- Contrasta la última prueba con los segmentos codificados.
+- Solo conserva afirmaciones con **cita literal** de un segmento existente; si ninguna queda respaldada, el veredicto es «sin evidencia suficiente».
+
+**Propiedad**
+- Cada estudio y documento cualitativo guarda `owner`, que es el perfil activo.
+- El docente solo ve los suyos; Administración ve todos.
+
+### Calificaciones · fase 1 (módulo académico)
+- **Matriz fechas × alumnos** (`/api/attendance/history`) con P, R, J, F y C.
+- **Porcentaje de asistencia** = (presentes + retardos) / (impartidas − justificadas). El umbral de riesgo es configurable, 80 % por defecto.
+- **Edición manual** (`/api/attendance/set`): exige justificación de al menos 5 caracteres, queda en auditoría y no permite tocar clases futuras.
+- **Exportación** en CSV con BOM para Excel y en PDF vía impresión con estilos de papel.
+- **Verificado** con datos reales: oferta 6, 44 alumnos, 4 en riesgo.
+
+### Asistencia facial
+**Hecho**
+- «Retardo» se registra pasados `LATE_TOLERANCE_MIN` minutos (10 por defecto).
+- Se guarda y se muestra la **confianza** del consenso multicaptura.
+- Hay un tono de confirmación: agudo para presente, grave para retardo.
+- Ya existían: el registro biométrico solo por Administración, con consentimiento y embedding cifrado AES-256-GCM, y el reconocimiento pasivo con 3 capturas.
+
+**Pendiente**
+- El **recuadro de detección en vivo** y la **captura multiángulo** requieren que `face_extract` (nativo) devuelva la caja y acepte varias vistas. Hoy solo devuelve el vector y la pose.
+- La **biometría de docentes**: la tabla `biometrics` solo admite alumnos.
+
+### Horarios propios del docente
+- `POST /api/schedules/block` crea un bloque semanal (día, inicio, fin, aula, desde, semanas) **solo sobre ofertas asignadas**.
+- Todo ocurre en una transacción. Si hay conflicto de aula, grupo o docente no se crea ninguna sesión.
+- Se asume CDMX en UTC−06:00, sin horario de verano desde 2022.
+
+### Memoria en tres capas (`memory_layers.py`)
+1. **Sesión**
+   - Muestra los tokens estimados (~3,6 caracteres por token) frente al contexto de 4096.
+   - **Compactar** resume con el LLM local y guarda un recuerdo `sessions` (inferido). **Limpiar** vacía la sesión.
+2. **Pedagógica** por perfil
+   - Guarda estilo, rigor, lenguajes y reglas en la tabla `pedagogy`.
+   - Tiene un recuerdo espejo para el RAG; el Cerebro y el Copiloto la usan como contexto.
+3. **Hechos**
+   - Se pueden fijar (prioridad en el contexto del Cerebro), cambiar de estado, editar y eliminar.
+   - Un hecho obsoleto no entra al contexto aunque esté fijado.
+
+### Biblioteca (`library_index.py`)
+- Muestra por documento los fragmentos, los embeddings activos y el peso en disco.
+- Categorías Nivel/Carrera/Materia/Tipo, con tipo sugerido y editable por Administración.
+- Vista previa de los primeros fragmentos y enlace al PDF original.
+- Búsqueda con filtros y cita «documento · p. N».
+- **Estado real**: 34 documentos, 3 582 fragmentos y **0 embeddings**. La búsqueda es **solo léxica (FTS5)** y la interfaz lo indica.
+- El botón «Generar embeddings» (bge-m3 vía Ollama) está **configurado sin probar**.
+
+### Copiloto pedagógico (`copilot.py`, sección «Copiloto»)
+- **Mis materias**: ofertas del perfil cruzadas con los programas del RAG (`academic_records`). El temario oficial se muestra con cita al PDF.
+- **Planeación de 16 semanas, determinista**
+  - Toma los subtemas oficiales en orden y reserva las semanas 1 (encuadre), 8 (parcial) y 16 (final).
+  - Objetivos, actividades y entregables salen del programa. Exporta Markdown y CSV.
+  - **Verificado** con LARRDS.
+- **Recursos de un clic**: ejemplo, código, ejercicio guiado, caso y explicación.
+  - Usan el LLM local y solo aceptan temas oficiales.
+  - El código **no se ejecuta**: se marca como borrador.
+
+## Fase 5 · Verificación (2026-11-16)
+
+**Compilación**
+
+| Comprobación | Resultado |
+|---|---|
+| `tsc --noEmit`: shell, servidor académico, UI académica | sin errores |
+| `vite build`: shell y UI académica | correcto |
+| `node --check desktop/main.cjs desktop/preload.cjs` | correcto |
+
+**Pruebas**
+
+| Suite | Resultado |
+|---|---|
+| Python (`unittest`) | todo OK, 3 omitidas por entorno |
+| Módulo académico (`node --test`) | 49/49 |
+| Electron `desktop/verify-exit.sh close` | ✔ arranque con el preload nuevo, cierre, procesos y puertos liberados, descarga de modelos confirmada |
+
+**Empaquetado de Electron**
+- El repositorio no tiene empaquetador (electron-builder/forge). La app se ejecuta desde el código con `escoia-desktop.sh`.
+- No se añadió ninguno: requiere decidir firma y notarización de macOS.
+
+**Pendientes explícitos**
+- Recuadro de detección en vivo y captura multiángulo, que requieren cambios en el extractor nativo.
+- Biometría de docentes.
+- Embeddings de la biblioteca.
+- Probar a mano la ventana nativa de «Explorar» dentro de Electron.
+- Probar la voz con micrófono real.
