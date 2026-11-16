@@ -29,6 +29,9 @@ class Handler(BaseHTTPRequestHandler):
                 if path=='/api/services':
                     from .services import academic_status
                     return self.send(academic_status())
+                if path=='/api/galaxy':
+                    from .galaxy import snapshot
+                    return self.send(snapshot(b,(parse_qs(url.query).get('window') or ['24h'])[0]))
                 if path=='/api/requests':
                     from .request_records import recent
                     return self.send(recent(b))

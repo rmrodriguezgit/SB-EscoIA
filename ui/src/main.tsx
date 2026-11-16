@@ -9,7 +9,7 @@ import { RequestGit } from "./RequestGit";
 import { RequestRecord } from "./RequestRecord";
 import { ResearchDashboard } from "./ResearchDashboard";
 import { VoiceInput } from "./VoiceInput";
-import { RequestGraph, type RequestEvent } from "./RequestGraph";
+import { Galaxy, type RequestEvent } from "./Galaxy";
 import { ResponseActions, type Artifact } from "./ResponseActions";
 type Document = { id: string; name: string; pages: number };
 type Career = { code: string; name: string; documents: Document[] };
@@ -247,7 +247,7 @@ function App() {
           </div>
         </header>
         <div className="content">
-          <RequestGraph events={state?.events||[]} busy={busy} module={academicModules[section]?section:undefined} academic={academicEvent}/>
+          <Galaxy events={state?.events||[]} busy={busy} module={academicModules[section]?section:undefined} academic={academicEvent}/>
           {section==="Encuestas" && <ResearchDashboard post={post} onBusy={setBusy}/>}
           {academicModules[section] && (
             <>
