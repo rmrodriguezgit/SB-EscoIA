@@ -179,3 +179,13 @@ body {
  .attendance-matrix,.attendance-matrix *{color:#000!important;background:#fff!important}
  .attendance-matrix th,.attendance-matrix td{border-color:#999!important}
 }
+
+/* Recuadro de detección facial en vivo */
+.capture-camera-stage .face-box{position:absolute;border:3px solid #5eead4;border-radius:12px;box-shadow:0 0 0 2px #0008,0 0 18px #5eead466;transition:left .18s linear,top .18s linear,width .18s linear,height .18s linear,border-color .2s;pointer-events:none}
+.capture-camera-stage .face-box b{position:absolute;left:-3px;bottom:100%;margin-bottom:4px;white-space:nowrap;font-size:12px;padding:3px 8px;border-radius:6px;background:#5eead4;color:#06101f}
+.capture-camera-stage .face-warn{border-color:#fbbf24;box-shadow:0 0 0 2px #0008}.capture-camera-stage .face-warn b{background:#fbbf24}
+.capture-camera-stage .face-present,.capture-camera-stage .face-done{border-color:#22c55e;box-shadow:0 0 0 2px #0008,0 0 24px #22c55e99}.capture-camera-stage .face-present b,.capture-camera-stage .face-done b{background:#22c55e}
+.capture-camera-stage .face-late{border-color:#f59e0b;box-shadow:0 0 0 2px #0008,0 0 24px #f59e0b99}.capture-camera-stage .face-late b{background:#f59e0b}
+.capture-camera-stage .face-unknown{border-color:#f87171;box-shadow:0 0 0 2px #0008,0 0 24px #f8717199}.capture-camera-stage .face-unknown b{background:#f87171;color:#fff}
+.capture-camera-stage .face-hint{position:absolute;top:10px;left:50%;transform:translateX(-50%);bottom:auto;right:auto;padding:4px 10px;border-radius:999px;background:#0f172acc;color:#e6ecff;font-size:12px}
+@media (prefers-reduced-motion:reduce){.capture-camera-stage .face-box{transition:none}}
