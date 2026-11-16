@@ -70,7 +70,7 @@ export const payloads = {
       action: z.literal("manual"),
       sessionId: id,
       studentId: id,
-      status: z.enum(["present", "excused", "absent"]),
+      status: z.enum(["present", "late", "excused", "absent"]),
       reason: text,
     }),
     z.object({

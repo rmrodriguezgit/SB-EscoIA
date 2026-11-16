@@ -6,6 +6,7 @@ import {
 } from "node:http";
 import { readFile, writeFile, mkdir, stat, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { resolve, extname, basename } from "node:path";
 import { randomUUID, randomBytes, createHash } from "node:crypto";
 import { WebSocketServer, type WebSocket } from "ws";
@@ -245,14 +246,27 @@ const server = create(async (req: IncomingMessage, res: ServerResponse) => {
         );
     }
     if (path.startsWith("/api/")) {
-      const session = auth.require(req, req.method !== "GET");
+      const profileRoute = ["/api/me", "/api/profiles", "/api/profile"].includes(path);
+      const session = auth.require(req, req.method !== "GET", profileRoute);
       const { actor, csrf } = session;
       if (path === "/api/me") {
         res.setHeader(
           "Set-Cookie",
           "sistema_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0",
         );
-        return send(res, 200, { actor, csrf });
+        return send(res, 200, { actor, csrf, profile: session.profile, locked: session.locked });
+      }
+      if (path === "/api/profiles" && req.method === "GET")
+        return send(res, 200, { profiles: await auth.profiles(), active: session.profile.userId, locked: session.locked });
+      if (path === "/api/profile" && req.method === "POST") {
+        const b = z.object({ userId: id, pin: z.string().max(12).optional() }).parse(await json(req));
+        const next = await auth.switchTo(b.userId, b.pin ?? "");
+        await native.call("audit_create", [next.actor.id, "perfil-entrada", String(next.profile.userId), Math.floor(Date.now() / 1000), JSON.stringify({ role: next.profile.role })]);
+        return send(res, 200, { actor: next.actor, csrf: next.csrf, profile: next.profile, locked: false });
+      }
+      if (path === "/api/profile/pin" && req.method === "POST") {
+        const b = z.object({ pin: z.string().max(12) }).parse(await json(req));
+        return send(res, 200, { profile: await auth.setPin(b.pin.trim()) });
       }
       if (path === "/api/health") {
         return send(res, 200, {
@@ -338,10 +352,14 @@ const server = create(async (req: IncomingMessage, res: ServerResponse) => {
         return send(res, 200, await run(actor, b.tool, b.payload, b.requestId));
       }
       if (path === "/api/attendance/roster" && req.method === "POST") {
-        if (!actor.roles.includes("admin")) throw Error("Se requiere administración");
         const b = z.object({action:z.enum(["add","edit","remove","move"]),offeringId:id,studentId:id.optional(),targetId:id.optional(),number:z.string().trim().min(1).max(80).optional(),name:z.string().trim().min(1).max(200).optional()}).parse(await json(req));
         const offers = await native.call<Row[]>("offerings");
         if (!offers.some(o => o.id === b.offeringId)) throw Error("Grupo/materia inexistente");
+        // Docente: solo altas y bajas en sus propias listas. Editar datos o mover entre grupos es de administración.
+        if (!actor.roles.includes("admin")) {
+          if (!["add", "remove"].includes(b.action)) throw Error("Se requiere administración para editar o mover alumnos");
+          if (offers.find(o => o.id === b.offeringId)?.teacher_id !== session.profile.teacherId) throw Error("Solo puedes modificar tus propias listas");
+        }
         const members = await native.call<Row[]>("enrolled_ids",[b.offeringId]);
         const steps: {op:string;params:unknown[]}[] = [];
         if (b.action === "add") {
@@ -441,8 +459,8 @@ const server = create(async (req: IncomingMessage, res: ServerResponse) => {
         return send(res, 200, { sessions: result, lists, sources });
       }
       if (path === "/api/attendance/report" && req.method === "GET") {
-        if (!actor.roles.includes("admin")) throw Error("Se requiere administración");
         const teacherId = id.parse(Number(url.searchParams.get("teacher")));
+        if (!actor.roles.includes("admin") && teacherId !== session.profile.teacherId) throw Error("Solo puedes consultar tu propio reporte");
         const month = z.string().regex(/^20\d{2}-(0[1-9]|1[0-2])$/).parse(url.searchParams.get("month"));
         const blocks = await importWorker({action:"monthly_weekly", teacherId, month, home:process.env.ACADEMIC_RAG_HOME || resolve(config.root,"../second-brain")});
         const offers = await native.call<Row[]>("offerings");
@@ -716,6 +734,17 @@ const cleanup = setInterval(async () => {
 cleanup.unref();
 server.requestTimeout = 120000;
 server.headersTimeout = 10000;
+{
+  // Migraciones pendientes (respaldo previo con .backup) antes de abrir sesiones.
+  const [v] = await native.call<Row[]>("version");
+  for (const [target, file] of [[2, "db/002.sql"], [3, "db/003.sql"]] as const) {
+    if (Number(v.user_version) >= target) continue;
+    execFileSync("sqlite3", [config.database, `.backup '${config.database.replace(/'/g, "''")}.pre-v${target}'`]);
+    execFileSync(config.native, [config.database, "--init", resolve(config.root, file)], { stdio: "inherit" });
+    v.user_version = target;
+    console.log(`Base migrada a versión ${target}.`);
+  }
+}
 await auth.initialize();
 server.listen(config.port, config.bind, () =>
   console.log(`Sistema Escolar: ${config.origin}`),

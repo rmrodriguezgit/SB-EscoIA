@@ -137,6 +137,7 @@ export function Table({ rows }: { rows: Row[] }) {
                               evening: "Vespertina",
                               present: "Presente",
                               absent: "Falta",
+                              late: "Retardo",
                               excused: "Justificada",
                               text: "Texto",
                               choice: "Opción única",
