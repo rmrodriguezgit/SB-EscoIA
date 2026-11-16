@@ -1,0 +1,31 @@
+# Secretos y configuración privada
+.env
+.env.*
+!.env.example
+certs/
+*.pem
+*.key
+
+# Datos personales, biométricos y respaldos (NUNCA versionar)
+data/
+*.db
+*.db-*
+*.sqlite
+*.enc
+
+# Dependencias, builds y modelos
+node_modules/
+.venv/
+build/
+ui/dist/
+artifacts/*
+models/*
+vendor/
+!native/vendor/
+__pycache__/
+
+# Sistema
+.DS_Store
+
+# Registros locales
+logs/

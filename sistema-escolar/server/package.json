@@ -1,0 +1,25 @@
+{
+  "name": "sistema-server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "mcp": "node --import tsx mcp_main.ts",
+    "start": "node --import tsx main.ts",
+    "test": "node --import tsx --test ../tests/*.test.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "busboy": "^1.6.0",
+    "ws": "^8.18.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/busboy": "^1.5.4",
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.18.0",
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  }
+}

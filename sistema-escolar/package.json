@@ -1,0 +1,10 @@
+{
+  "name": "sistema-escolar",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "npm run start --prefix server",
+    "check": "bash scripts/check.sh"
+  }
+}

@@ -1,0 +1,44 @@
+BEGIN IMMEDIATE;
+ALTER TABLE users ADD COLUMN password_hash TEXT;
+ALTER TABLE schedules ADD COLUMN cancelled INTEGER NOT NULL DEFAULT 0 CHECK(cancelled IN (0,1));
+ALTER TABLE schedules ADD COLUMN closed INTEGER NOT NULL DEFAULT 0 CHECK(closed IN (0,1));
+ALTER TABLE biometrics ADD COLUMN dimensions INTEGER NOT NULL DEFAULT 512;
+ALTER TABLE respondents ADD COLUMN token_hash TEXT;
+ALTER TABLE respondents ADD COLUMN completed_at INTEGER;
+ALTER TABLE responses ADD COLUMN transcript TEXT;
+ALTER TABLE codes ADD COLUMN description TEXT NOT NULL DEFAULT '';
+CREATE TABLE invites(id TEXT PRIMARY KEY,survey_id INTEGER NOT NULL REFERENCES surveys,token_hash TEXT UNIQUE NOT NULL,expires_at INTEGER NOT NULL,respondent_id TEXT UNIQUE REFERENCES respondents);
+CREATE TABLE course_units(id INTEGER PRIMARY KEY,subject_id INTEGER NOT NULL REFERENCES subjects,position INTEGER NOT NULL,title TEXT NOT NULL,topics_json TEXT NOT NULL CHECK(json_valid(topics_json)),UNIQUE(subject_id,position));
+CREATE TABLE availability(teacher_id INTEGER REFERENCES teachers,slot INTEGER CHECK(slot BETWEEN 0 AND 63),PRIMARY KEY(teacher_id,slot));
+CREATE TABLE group_availability(group_id INTEGER REFERENCES groups,slot INTEGER CHECK(slot BETWEEN 0 AND 63),PRIMARY KEY(group_id,slot));
+CREATE TABLE event_log(run_id TEXT REFERENCES runs,revision INTEGER NOT NULL,event_json TEXT NOT NULL CHECK(json_valid(event_json)),PRIMARY KEY(run_id,revision));
+CREATE TABLE operations(request_id TEXT PRIMARY KEY,actor_id INTEGER REFERENCES users,operation TEXT NOT NULL,result_json TEXT NOT NULL CHECK(json_valid(result_json)),created_at INTEGER NOT NULL);
+DROP VIEW absence_totals;
+CREATE VIEW absence_totals AS SELECT g.student_id,g.offering_id,SUM(CASE WHEN s.id IS NOT NULL AND (a.status='absent' OR a.status IS NULL) THEN 1 ELSE 0 END) AS unexcused FROM grades g LEFT JOIN schedules s ON s.offering_id=g.offering_id AND s.ends<=g.closed_at AND s.closed=1 AND s.cancelled=0 LEFT JOIN attendance a ON a.session_id=s.id AND a.student_id=g.student_id GROUP BY g.student_id,g.offering_id;
+CREATE TRIGGER prerequisite_cycle BEFORE INSERT ON prerequisites BEGIN SELECT RAISE(ABORT,'Cadena de seriacion circular') WHERE NEW.subject_id=NEW.requires_id OR EXISTS(WITH RECURSIVE chain(id) AS (SELECT NEW.requires_id UNION SELECT p.requires_id FROM prerequisites p JOIN chain c ON p.subject_id=c.id) SELECT 1 FROM chain WHERE id=NEW.subject_id); END;
+CREATE TRIGGER offering_lock BEFORE UPDATE ON offerings WHEN EXISTS(SELECT 1 FROM schedules WHERE offering_id=OLD.id) BEGIN SELECT RAISE(ABORT,'Oferta con sesiones existentes: crear otra oferta'); END;
+CREATE TRIGGER enrollment_prerequisites BEFORE INSERT ON enrollments BEGIN SELECT RAISE(ABORT,'Seriacion pendiente') WHERE EXISTS(WITH RECURSIVE chain(id) AS (SELECT p.requires_id FROM prerequisites p JOIN offerings o ON o.subject_id=p.subject_id WHERE o.id=NEW.offering_id UNION SELECT p.requires_id FROM prerequisites p JOIN chain c ON p.subject_id=c.id) SELECT 1 FROM chain c WHERE NOT EXISTS(SELECT 1 FROM grades g JOIN offerings o ON o.id=g.offering_id WHERE g.student_id=NEW.student_id AND o.subject_id=c.id AND g.closed_at IS NOT NULL AND g.total>=60)); END;
+CREATE TRIGGER offering_qualification BEFORE INSERT ON offerings BEGIN SELECT RAISE(ABORT,'Docente no acreditado para la materia') WHERE NOT EXISTS(SELECT 1 FROM teacher_subjects WHERE teacher_id=NEW.teacher_id AND subject_id=NEW.subject_id); END;
+CREATE TRIGGER code_parent_scope BEFORE INSERT ON codes WHEN NEW.parent_id IS NOT NULL BEGIN SELECT RAISE(ABORT,'Codigo padre de otra encuesta') WHERE NOT EXISTS(SELECT 1 FROM codes WHERE id=NEW.parent_id AND survey_id=NEW.survey_id); END;
+CREATE TRIGGER coding_scope BEFORE INSERT ON coding BEGIN SELECT RAISE(ABORT,'Codificacion de otra encuesta') WHERE NOT EXISTS(SELECT 1 FROM responses r JOIN questions q ON q.id=r.question_id JOIN codes c ON c.survey_id=q.survey_id WHERE r.id=NEW.response_id AND c.id=NEW.code_id); END;
+CREATE TRIGGER codes_update_parent BEFORE UPDATE OF parent_id,survey_id ON codes BEGIN SELECT RAISE(ABORT,'Codigo padre invalido') WHERE NEW.parent_id=NEW.id OR (NEW.parent_id IS NOT NULL AND (NOT EXISTS(SELECT 1 FROM codes WHERE id=NEW.parent_id AND survey_id=NEW.survey_id) OR EXISTS(WITH RECURSIVE descendants(id) AS (SELECT NEW.id UNION SELECT c.id FROM codes c JOIN descendants d ON c.parent_id=d.id) SELECT 1 FROM descendants WHERE id=NEW.parent_id))); END;
+CREATE INDEX schedules_time ON schedules(starts,ends);
+CREATE INDEX responses_question ON responses(question_id);
+CREATE INDEX chunks_document ON rag_chunks(document_id);
+
+DROP TRIGGER schedule_conflict;
+DROP TRIGGER schedule_update_conflict;
+CREATE TRIGGER schedule_conflict BEFORE INSERT ON schedules WHEN NEW.cancelled=0 BEGIN SELECT RAISE(ABORT,'Conflicto de horario') WHERE EXISTS(SELECT 1 FROM schedules s JOIN offerings a ON a.id=s.offering_id JOIN offerings b ON b.id=NEW.offering_id WHERE s.cancelled=0 AND s.starts<NEW.ends AND s.ends>NEW.starts AND (s.room_id=NEW.room_id OR a.teacher_id=b.teacher_id OR a.group_id=b.group_id OR EXISTS(SELECT 1 FROM enrollments ea JOIN enrollments eb ON ea.student_id=eb.student_id WHERE ea.offering_id=a.id AND eb.offering_id=b.id))); END;
+CREATE TRIGGER schedule_update_conflict BEFORE UPDATE ON schedules WHEN NEW.cancelled=0 BEGIN SELECT RAISE(ABORT,'Conflicto de horario') WHERE EXISTS(SELECT 1 FROM schedules s JOIN offerings a ON a.id=s.offering_id JOIN offerings b ON b.id=NEW.offering_id WHERE s.id<>NEW.id AND s.cancelled=0 AND s.starts<NEW.ends AND s.ends>NEW.starts AND (s.room_id=NEW.room_id OR a.teacher_id=b.teacher_id OR a.group_id=b.group_id OR EXISTS(SELECT 1 FROM enrollments ea JOIN enrollments eb ON ea.student_id=eb.student_id WHERE ea.offering_id=a.id AND eb.offering_id=b.id))); END;
+CREATE TRIGGER enrollment_schedule_conflict BEFORE INSERT ON enrollments BEGIN SELECT RAISE(ABORT,'Conflicto de horario del estudiante') WHERE EXISTS(SELECT 1 FROM schedules a JOIN schedules b ON a.starts<b.ends AND a.ends>b.starts JOIN enrollments e ON e.offering_id=b.offering_id WHERE a.offering_id=NEW.offering_id AND e.student_id=NEW.student_id AND a.cancelled=0 AND b.cancelled=0); END;
+
+CREATE TABLE artifacts(id TEXT PRIMARY KEY,actor_id INTEGER NOT NULL REFERENCES users,created_at INTEGER NOT NULL);
+
+ALTER TABLE subjects ADD COLUMN requirements_json TEXT NOT NULL DEFAULT '{"min_industry_years":0,"background_keywords":[]}' CHECK(json_valid(requirements_json));
+CREATE TRIGGER qualification_profile BEFORE INSERT ON teacher_subjects BEGIN SELECT RAISE(ABORT,'Perfil docente incompatible con la materia') WHERE EXISTS(SELECT 1 FROM teachers t JOIN subjects s ON s.id=NEW.subject_id WHERE t.id=NEW.teacher_id AND (t.industry_years<COALESCE(json_extract(s.requirements_json,'$.min_industry_years'),0) OR EXISTS(SELECT 1 FROM json_each(s.requirements_json,'$.background_keywords') k WHERE instr(lower(t.background),lower(k.value))=0))); END;
+ALTER TABLE availability RENAME TO availability_old;
+CREATE TABLE availability(teacher_id INTEGER REFERENCES teachers,slot INTEGER CHECK(slot BETWEEN 0 AND 39),shift TEXT NOT NULL DEFAULT 'morning' CHECK(shift IN ('morning','evening')),PRIMARY KEY(teacher_id,slot,shift));
+INSERT INTO availability(teacher_id,slot) SELECT teacher_id,slot FROM availability_old;
+DROP TABLE availability_old;
+PRAGMA user_version=2;
+COMMIT;
