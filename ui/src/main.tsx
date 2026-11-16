@@ -274,7 +274,7 @@ function App() {
                 key={section + academicRevision}
                 className="academic-frame"
                 title={section}
-                src={`http://127.0.0.1:8787/?embed=1&modulo=${encodeURIComponent(academicModules[section])}`}
+                src={`http://127.0.0.1:8787/?embed=1&theme=dark&modulo=${encodeURIComponent(academicModules[section])}`}
                 allow="camera; microphone"
               />
               <p className="privacy-note">

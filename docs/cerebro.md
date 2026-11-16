@@ -31,3 +31,9 @@ Asistente flotante, abajo a la derecha. Se abre con el botón «Cerebro» o con 
 - **Verificado con LLMLX qwen3.5:4b:** respuesta en 17–27 s.
 - **Verificado en la interfaz:** aceptar `abrir` cambia de sección; aceptar `consulta` la ejecuta en la conversación principal.
 - **Configurado sin probar:** la voz con micrófono real.
+
+## Tema unificado (2026-11-16)
+
+Toda la interfaz comparte el lenguaje visual de Cuerdas y del Cerebro: fondo azul noche, superficies `#0e1630`, líneas `#22305a`, texto `#e6ecff`, turquesa para lo completado o aceptado, ámbar para la generación y violeta para lo pendiente.
+- Los colores claros de `ui/src/style.css` se pasaron a esta paleta. La capa final del archivo («Tema unificado») fija los tokens `--ui-*`.
+- Los módulos académicos incrustados se abren con `?embed=1&theme=dark`, que activa el tema «cielo nocturno» de sistema-escolar sin cambiar el que la app independiente tiene guardado.
