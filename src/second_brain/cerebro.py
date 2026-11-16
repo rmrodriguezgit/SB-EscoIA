@@ -9,7 +9,7 @@ import json,os,re,time
 from pathlib import Path
 from .core import identifier
 
-SECTIONS=('Conversación','Biblioteca','Memoria','Investigaciones','Asistencia','Horarios','Calificaciones','Administración','Tareas')
+SECTIONS=('Conversación','Copiloto','Biblioteca','Memoria','Investigaciones','Asistencia','Horarios','Calificaciones','Administración','Tareas')
 ACTIONS={
  'consulta':'Enviar una petición a la conversación principal de EscoIA (consultas curriculares con fuentes, crear programas o planeaciones, desarrollar temas o lecciones, órdenes de listas). text = la petición completa',
  'abrir':'Abrir una sección de la ventana principal. text = una de: '+', '.join(SECTIONS),

@@ -1155,3 +1155,10 @@ button.workspace:hover{border-color:#3a4c88}
 .edit-dialog{position:fixed;right:16px;bottom:16px;z-index:70;max-width:380px;background:#0e1630;border:1px solid #5eead4;border-radius:12px;padding:14px;display:grid;gap:8px;box-shadow:0 20px 50px #000a}
 .edit-dialog label{display:grid;gap:4px;font-size:12px;color:#9fb0dd}
 .edit-dialog input,.edit-dialog select{background:#070b18;border:1px solid #2f3f78;border-radius:8px;color:var(--ui-text);padding:6px 8px}
+
+/* ── Copiloto ── */
+.plan-table td{vertical-align:top;font-size:12.5px}.plan-table ul{margin:4px 0 0;padding-left:16px}
+.plan-kinds{display:flex;flex-wrap:wrap;gap:4px}
+.plan-kinds .chip{background:#16224a;border:1px solid #2f3f78;color:#c9d4f5;border-radius:999px;padding:2px 8px;font-size:11px;cursor:pointer}
+.plan-kinds .chip:hover{border-color:#5eead4}
+.copilot-md{white-space:pre-wrap;background:#070b18;border-radius:10px;padding:12px;font-size:12.5px;max-height:60vh;overflow:auto;margin:0}

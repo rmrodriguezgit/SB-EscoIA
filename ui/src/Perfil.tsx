@@ -6,8 +6,8 @@ export type ProfileState = { profile: Profile | null; locked: boolean; profiles:
 
 /** Secciones visibles por rol. La autorización real la aplica el módulo académico (8787). */
 export const SECTIONS_BY_ROLE: Record<Role, string[]> = {
-  admin: ["Conversación", "Biblioteca", "Memoria", "Investigaciones", "Asistencia", "Horarios", "Calificaciones", "Administración", "Tareas"],
-  teacher: ["Conversación", "Biblioteca", "Memoria", "Investigaciones", "Asistencia", "Horarios", "Calificaciones", "Tareas"],
+  admin: ["Conversación", "Copiloto", "Biblioteca", "Memoria", "Investigaciones", "Asistencia", "Horarios", "Calificaciones", "Administración", "Tareas"],
+  teacher: ["Conversación", "Copiloto", "Biblioteca", "Memoria", "Investigaciones", "Asistencia", "Horarios", "Calificaciones", "Tareas"],
 };
 export const roleLabel = (r?: Role) => (r === "teacher" ? "Docente" : "Administración");
 export const initials = (name?: string) =>

@@ -11,6 +11,7 @@ import { RequestRecord } from "./RequestRecord";
 import { Investigaciones } from "./Investigaciones";
 import { Memoria } from "./Memoria";
 import { BibliotecaIndex } from "./BibliotecaIndex";
+import { Copiloto } from "./Copiloto";
 import { VoiceInput } from "./VoiceInput";
 import { Cuerdas, type RequestEvent } from "./Cuerdas";
 import { Cerebro } from "./Cerebro";
@@ -63,6 +64,7 @@ type State = {
 };
 const icons: Record<string, string> = {
   Conversación: "✧",
+  Copiloto: "✎",
   Biblioteca: "▤",
   Memoria: "◇",
   Investigaciones: "▧",
@@ -583,6 +585,7 @@ function App() {
               </div>
             </>
           )}
+          {section === "Copiloto" && <Copiloto post={post} onBusy={setBusy} />}
           {section === "Memoria" && <Memoria post={post} messages={messages} setMessages={setMessages} context={4096} />}
           {section === "Tareas" && (
             <>

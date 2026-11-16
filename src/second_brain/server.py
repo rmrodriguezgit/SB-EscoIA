@@ -75,6 +75,9 @@ class Handler(BaseHTTPRequestHandler):
             if size>(3000000 if self.path=='/api/voice' else 500000 if self.path in {'/api/research','/api/memory'} else 50000):raise ValueError('Solicitud demasiado grande')
             args=json.loads(self.rfile.read(size));b=Brain(self.server.home)
             try:
+                if self.path=='/api/copilot':
+                    from . import copilot
+                    return self.send(copilot.dispatch(b,args))
                 if self.path=='/api/library':
                     from . import library_index
                     return self.send(library_index.dispatch(b,args))
