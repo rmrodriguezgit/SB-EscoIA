@@ -18,7 +18,13 @@ def doctor():
         except Exception:return 'no disponible'
     return {'architecture':platform.machine(),'macos':platform.mac_ver()[0], 'chip':cmd(['sysctl','-n','machdep.cpu.brand_string']), 'physical_bytes':cmd(['sysctl','-n','hw.memsize']), 'cores':os.cpu_count(),'memory_pressure':cmd(['memory_pressure']), 'swap':cmd(['sysctl','vm.swapusage']), 'disk_free_bytes':shutil.disk_usage('.').free,'tools':{k:shutil.which(k) for k in ['ollama','pdftotext','ffmpeg','gws','claude','codex']}}
 
-def ollama(path,payload=None,timeout=120):
+def llm_timeout(timeout=None):
+    """Timeout de una llamada al modelo: ESCOIA_LLM_TIMEOUT por defecto (120 s), acotado por ESCOIA_LLM_TIMEOUT_MAX (900 s)."""
+    value=float(timeout if timeout is not None else os.environ.get('ESCOIA_LLM_TIMEOUT','120'))
+    return max(1.0,min(value,float(os.environ.get('ESCOIA_LLM_TIMEOUT_MAX','900'))))
+
+def ollama(path,payload=None,timeout=None):
+    timeout=llm_timeout(timeout)
     from . import remote_ai
     if remote_ai.enabled():
         try:return remote_ai.ollama_contract(path,payload,timeout)

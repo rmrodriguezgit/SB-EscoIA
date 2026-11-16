@@ -105,7 +105,7 @@ def ask(brain,question,history=None):
   brain.event(pid,'Qwen','Cerebro: generando respuesta con '+local_model().replace('llmlx:','LLMLX · '))
   started=time.monotonic()
   try:response=ollama('/api/chat',{'model':local_model(),'format':SCHEMA,'stream':False,'options':{'num_ctx':int(os.environ.get('BRAIN_CONTEXT','4096')),'num_predict':900,'temperature':0.3},
-   'messages':[{'role':'system','content':SYSTEM},*turns,{'role':'user','content':prompt}]},timeout=180)
+   'messages':[{'role':'system','content':SYSTEM},*turns,{'role':'user','content':prompt}]},timeout=float(os.environ.get('ESCOIA_CEREBRO_TIMEOUT','180')))
   except Exception as e:brain.event(pid,'fallida','Cerebro: '+str(e));raise
  finally:MODEL_LOCK.release()
  try:value=json.loads(response.get('message',{}).get('content','') or '{}')

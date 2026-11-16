@@ -29,7 +29,7 @@ Graphify instala el paquete `graphifyy` y expone el comando `graphify`; tiene ba
 
 Magnitude publica compilación/ajuste de kernels de inferencia. Sus afirmaciones de rendimiento se deben medir; no es modificar el kernel de macOS. No se ejecutaron sus instaladores ni se cambiaron backends. [Repositorio](https://github.com/magnitudedev/magnitude).
 
-GWS requiere proyecto Google Cloud y OAuth. No se solicitan contraseñas ni se ejecutó consentimiento automáticamente. `workspace_read` acepta únicamente Gmail messages list, Calendar events list y Drive files list, sin comandos arbitrarios. Sincronización incremental completa de Workspace y escrituras con vista previa permanecen pendientes. [Documentación original](https://github.com/googleworkspace/cli).
+GWS (Gmail, Calendar, Drive): **pendiente**. El adaptador `workspace_read` nunca se conectó y se retiró como código muerto el 2026-11-16 (ver `docs/reingenieria.md`). Requeriría un proyecto Google Cloud y OAuth; nunca se solicitan contraseñas.
 
 Codex: initialize → initialized por stdio, probado con CLI 0.160.0. La evidencia está en `codex-handshake.json`. La integración de turnos, aprobación y bus persistente externo está pendiente. [Protocolo oficial](https://learn.chatgpt.com/docs/app-server).
 
