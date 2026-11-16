@@ -757,20 +757,12 @@ export class Domain implements DomainPort {
               alreadyRecorded: true,
               message: "Ya se tomó asistencia a este alumno en esta sesión",
             };
+          const tolerance = Number.isFinite(config.lateToleranceMin) && config.lateToleranceMin >= 0 ? config.lateToleranceMin : 10;
+          const status = now() > session.starts + tolerance * 60 ? "late" : "present";
+          const confidence = Math.max(0, Math.min(1, match.meanScore));
           return commit(
-            [
-              {
-                op: "attendance_create",
-                params: [
-                  p.sessionId,
-                  match.studentId,
-                  "present",
-                  now(),
-                  actor.id,
-                ],
-              },
-            ],
-            { studentId: match.studentId, status: "present" },
+            [{ op: "attendance_record", params: [p.sessionId, match.studentId, status, now(), actor.id, confidence] }],
+            { studentId: match.studentId, status, confidence },
           );
         }
       }
