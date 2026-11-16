@@ -1162,3 +1162,6 @@ button.workspace:hover{border-color:#3a4c88}
 .plan-kinds .chip{background:#16224a;border:1px solid #2f3f78;color:#c9d4f5;border-radius:999px;padding:2px 8px;font-size:11px;cursor:pointer}
 .plan-kinds .chip:hover{border-color:#5eead4}
 .copilot-md{white-space:pre-wrap;background:#070b18;border-radius:10px;padding:12px;font-size:12.5px;max-height:60vh;overflow:auto;margin:0}
+.copilot-found{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.copilot-found .chip{background:#16224a;border:1px solid #2f3f78;color:#c9d4f5;border-radius:999px;padding:3px 10px;font-size:12px;cursor:pointer}
+.copilot-found .chip.on,.copilot-found .chip:hover{border-color:#5eead4;color:#5eead4}

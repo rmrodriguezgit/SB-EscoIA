@@ -10,7 +10,7 @@ const download = (name: string, text: string, type: string) => { const a = docum
 export function Copiloto({ post, onBusy }: { post: Post; onBusy: (b: boolean) => void }) {
   const [subjects, setSubjects] = useState<{ mine: Subject[]; found: Subject[]; academic_available: boolean } | null>(null), [query, setQuery] = useState("");
   const [code, setCode] = useState(""), [syllabus, setSyllabus] = useState<any>(null), [start, setStart] = useState(nextMonday()), [plan, setPlan] = useState<any>(null);
-  const [resource, setResource] = useState<any>(null), [busy, setBusy] = useState(""), [err, setErr] = useState("");
+  const [resource, setResource] = useState<any>(null), [busy, setBusy] = useState(""), [err, setErr] = useState(""), [searched, setSearched] = useState("");
   async function call(label: string, body: any) {
     setBusy(label); onBusy(true); setErr("");
     try { return await post("copilot", body); } catch (e) { setErr((e as Error).message); return null; } finally { setBusy(""); onBusy(false); }
@@ -38,11 +38,24 @@ export function Copiloto({ post, onBusy }: { post: Post; onBusy: (b: boolean) =>
               {subjects?.found.length ? <optgroup label="Resultados de búsqueda">{options.filter((o) => !subjects.mine.some((m) => m.code === o.code)).map((s) => <option key={s.code} value={s.code}>{s.code} · {s.name}</option>)}</optgroup> : null}
             </select>
           </label>
-          <form className="inv-row" onSubmit={(e) => { e.preventDefault(); void call("Buscando…", { action: "subjects", query }).then((r) => r && setSubjects(r)); }}>
+          <form className="inv-row" onSubmit={(e) => {
+            e.preventDefault();
+            void call("Buscando…", { action: "subjects", query }).then((r) => {
+              if (!r) return;
+              setSubjects(r); setSearched(query.trim());
+              // Clave exacta o un único resultado: se abre directamente esa materia.
+              const exact = r.found.find((f: Subject) => f.code.toUpperCase() === query.trim().toUpperCase());
+              const pick = exact ?? (r.found.length === 1 ? r.found[0] : null);
+              if (pick) setCode(pick.code);
+            });
+          }}>
             <label>Buscar otra materia<input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Nombre o clave" /></label>
             <button className="secondary" disabled={!query.trim()}>Buscar</button>
           </form>
         </div>
+        {searched && subjects && (subjects.found.length === 0
+          ? <p className="inv-warn" role="status">Sin programas oficiales para «{searched}». Revisa la clave o busca por nombre.</p>
+          : subjects.found.length > 1 && <div className="copilot-found" role="status"><span className="muted">{subjects.found.length} resultados para «{searched}»:</span>{subjects.found.map((f) => <button key={f.code} type="button" className={"chip" + (f.code === code ? " on" : "")} onClick={() => setCode(f.code)}>{f.code} · {f.name}</button>)}</div>)}
         {subjects && !subjects.academic_available && <p className="inv-warn">El servicio académico no responde: no se pueden identificar tus materias asignadas; usa la búsqueda.</p>}
         {subjects?.academic_available && !subjects.mine.length && <p className="muted">No hay programas oficiales que coincidan con tus grupos asignados; usa la búsqueda.</p>}
         {busy && <p role="status" className="muted">{busy}</p>}
