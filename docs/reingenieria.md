@@ -160,8 +160,15 @@ Registro por fases de la reingeniería solicitada el 2026-11-16. Cada fase indic
 - Hay un tono de confirmación: agudo para presente, grave para retardo.
 - Ya existían: el registro biométrico solo por Administración, con consentimiento y embedding cifrado AES-256-GCM, y el reconocimiento pasivo con 3 capturas.
 
+**Recuadro de detección en vivo (añadido el 2026-11-16)**
+- `face_extract --detect-stdin` es un proceso persistente que solo usa YuNet: no corre ArcFace ni produce embeddings.
+- Devuelve la caja, la puntuación y la calidad, con los mismos umbrales que la extracción: un rostro, ≥ 80 px, nitidez y luz.
+- `POST /api/face/detect` atiende un cuadro a la vez y descarta el siguiente si el detector está ocupado. Borra el JPEG temporal y cierra el proceso tras 60 s sin uso. Responde en 12–27 ms.
+- En la UI, la caja se actualiza unas 4 veces por segundo con una pista («Acércate un poco», «Falta luz», «Solo una persona…»). Al reconocer, la caja muestra «Nombre · Presente/Retardo · %» o «No registrado».
+- **Verificado** con una imagen de muestra de OpenCV, por prueba automática y por HTTP. **No probado con cámara real** en una clase vigente.
+
 **Pendiente**
-- El **recuadro de detección en vivo** y la **captura multiángulo** requieren que `face_extract` (nativo) devuelva la caja y acepte varias vistas. Hoy solo devuelve el vector y la pose.
+- La **captura multiángulo** del registro.
 - La **biometría de docentes**: la tabla `biometrics` solo admite alumnos.
 
 ### Horarios propios del docente

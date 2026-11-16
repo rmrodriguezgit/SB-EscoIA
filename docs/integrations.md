@@ -48,5 +48,6 @@ Desde 2026-11-15 EscoIA solo ofrece LLMLX: el motor remoto Quant-AI, Uzu y los Q
 | Compactación de sesión, triangulación y recursos del Copiloto con LLMLX | Configurado sin probar en vivo (cubierto por pruebas con modelo simulado) |
 | Embeddings de la biblioteca (bge-m3 vía Ollama) | Configurado sin probar; hoy 0 embeddings, búsqueda léxica |
 | Ventana nativa «Explorar» (preload + IPC) | Configurado sin probar a mano; respaldo web verificado |
-| Recuadro de detección facial en vivo y captura multiángulo | Pendiente (requiere cambio en face_extract) |
+| Recuadro de detección facial en vivo | Configurado y verificado con imagen de muestra (prueba + HTTP); sin probar con cámara real |
+| Captura facial multiángulo en el registro | Pendiente |
 
