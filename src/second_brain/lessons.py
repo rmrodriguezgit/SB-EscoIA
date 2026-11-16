@@ -109,7 +109,7 @@ def create(brain,question,career,run):
  from . import finance_lesson
  if finance_lesson.requested(question):return finance_lesson.create(brain,question,run)
  from .knowledge import curriculum_evidence
- from .runtime import infer,ollama,assert_resources
+ from .runtime import infer,ollama,assert_resources,local_model
  from .adapters import validate_answer
  topic=topic_query(question)
  retrieved=curriculum_evidence(brain,question,career)
@@ -140,7 +140,7 @@ def create(brain,question,career,run):
   try:
    assert_resources();brain.event(run,'Qwen','Elaborando marco teórico a partir del contenido recuperado')
    theory=infer('Elabora en español un marco teórico de '+topic+'. Explica conceptos y relaciones en cuatro párrafos con citas [n]. Usa solo contenido disponible, sin atribuir resultados al texto completo no leído. Usa correctamente VPN (valor presente neto), si aplica; los beneficios descontados menos los costos descontados, incluyendo inversión inicial, determinan su valor. EscoIA es el software, nunca atribuyas un curso a una universidad llamada EscoIA. No nombres fuentes irrelevantes. No agregues supuestos ni resultados que no estén en la evidencia.',evidence)
-   ollama('/api/generate',{'model':__import__('os').environ.get('BRAIN_MODEL','qwen2.5:3b-instruct-q4_K_M'),'keep_alive':0},timeout=15)
+   ollama('/api/generate',{'model':local_model(),'keep_alive':0},timeout=15)
    import time
    deadline=time.monotonic()+45
    while ollama('/api/ps',timeout=3).get('models'):

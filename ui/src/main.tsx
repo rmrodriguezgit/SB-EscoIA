@@ -44,7 +44,7 @@ type Message = {
   mode?: string;
   artifacts?: Artifact[];
 };
-type Resources={provider?:string;memory:{used_gib?:number;limit_gib:number;pressure?:string;error?:string;headroom_gib?:number;reserve_gib?:number;shortfall_gib?:number;can_load?:boolean};qwen:{status:string;resident:{name:string;size_gib:number}[]};laya:{status:string};pipeline_busy:boolean;cpu_threads:number;pdf_workers:number};
+type Resources={provider?:string;model?:string;llmlx?:{connected:boolean;reason?:string;engine?:string;default_model?:string;breaker_open?:boolean;available_gib?:number;threshold_gib?:number;total_gib?:number;pressure?:string};memory:{used_gib?:number;limit_gib:number;pressure?:string;error?:string;headroom_gib?:number;reserve_gib?:number;shortfall_gib?:number;can_load?:boolean};qwen:{status:string;resident:{name:string;size_gib:number}[]};laya:{status:string};pipeline_busy:boolean;cpu_threads:number;pdf_workers:number};
 type State = {
   resources?: Resources;
   csrf: string;
@@ -52,7 +52,7 @@ type State = {
   memories: Memory[];
   tasks: Task[];
   events: RequestEvent[];
-  inference?:{preferred:string;active:string;reason:string;local_model:string;local_models:string[]};
+  inference?:{preferred:string;active:string;reason:string;local_model:string;local_models:string[];local_models_info?:{name:string;size_gib:number|null}[]};
   model: { available: boolean; ready: boolean; model: string };
 };
 const icons: Record<string, string> = {
@@ -209,15 +209,11 @@ function App() {
         <section className="resource-panel" aria-label="Recursos del sistema">
           <h4>Estado del sistema</h4>
           <AcademicConnection csrf={state?.csrf || ""} onConnected={() => setAcademicRevision(v => v+1)} />
-          <label>Motor de IA <select aria-label="Motor de inferencia" value={state?.inference?.preferred||'remote'} disabled={busy||state?.resources?.pipeline_busy} onChange={async e=>{try{await post('inference',{mode:e.target.value});await refresh()}catch(e){setError((e as Error).message)}}}><option value="remote">Remoto (predeterminado)</option><option value="local">Local · Qwen + LAYA</option></select></label>
-          {state?.inference?.preferred==='local'&&<label>Qwen local <select aria-label="Modelo Qwen local" value={state?.inference?.local_model||'qwen2.5:1.5b-instruct-q4_K_M'} disabled={busy||state?.resources?.pipeline_busy} onChange={async e=>{try{await post('inference',{model:e.target.value});await refresh()}catch(e){setError((e as Error).message)}}}><option value="uzu:qwen3.5:0.8b:4bit">Uzu · Qwen3.5 0.8B · experimental</option><option value="qwen2.5:1.5b-instruct-q4_K_M">1.5B · ligero · reserva 1,5 GiB</option><option value="qwen2.5:3b-instruct-q4_K_M">3B · reserva 2,5 GiB</option><option value="llmlx:qwen3.5:4b">LLMLX · Qwen3.5 4B · reserva 4,5 GiB</option><option value="llmlx:qwen3:8b">LLMLX · Qwen3 8B · reserva 6,5 GiB</option></select></label>}
-          <p role="status">En uso: {state?.inference?.active==='local'?'Local · Qwen / LAYA MLX':'Remoto · Quant-AI'}</p>
-          {state?.inference?.reason&&<small>{state.inference.reason}. Para reintentar el servidor, selecciona Remoto.</small>}
-          <p>{state?.resources?.pipeline_busy?'● Procesando':state?.resources?.provider?'● Inferencia remota':state?.resources?.memory.can_load?'● Margen para Qwen':state?.resources?.memory.used_gib!==undefined?'● Memoria requiere atención':'● Comprobando'}</p>
-          <dl><dt>Memoria</dt><dd>{state?.resources?.memory.used_gib?.toFixed(2)??'—'} / 12,5 GiB</dd><dt>Presión</dt><dd>{state?.resources?.memory.pressure||'Sin medición'}</dd><dt>Qwen</dt><dd>{state?.resources?.qwen.status||'Comprobando'}</dd><dt>Laya</dt><dd>{state?.resources?.laya.status||'Comprobando'}</dd><dt>CPU</dt><dd>{state?.resources?.cpu_threads??'—'} hilos · {state?.resources?.pdf_workers??2} PDF en paralelo</dd></dl>
-          <p className="resource-margin">{state?.resources?.provider?'Qwen y LAYA en NVIDIA T4 · sin pesos locales.':state?.resources?.memory.headroom_gib!==undefined?`Margen: ${state.resources.memory.headroom_gib.toFixed(2)} GiB · Qwen requiere ${state.resources.memory.reserve_gib?.toFixed(2)} GiB adicionales.`:'Midiendo margen de memoria…'}</p>
+          <label>Modelo LLMLX <select aria-label="Modelo LLMLX" value={state?.inference?.local_model||'llmlx:qwen3.5:4b'} disabled={busy||state?.resources?.pipeline_busy} onChange={async e=>{try{await post('inference',{model:e.target.value});await refresh()}catch(e){setError((e as Error).message)}}}>{(state?.inference?.local_models_info||[]).map(m=>{const free=state?.resources?.llmlx?.available_gib,need=m.size_gib===null?undefined:m.size_gib+(state?.resources?.llmlx?.threshold_gib??1.8),tight=free!==undefined&&need!==undefined&&free<need;return <option key={m.name} value={m.name}>{m.name.replace(/^llmlx:/,'')}{m.size_gib!==null?` · ${m.size_gib.toFixed(1)} GiB`:''}{tight?' · RAM justa':''}</option>})}</select></label>
+          <p role="status">{state?.resources?.pipeline_busy?'● Procesando':!state?.resources?.llmlx?'● Comprobando':!state.resources.llmlx.connected?'● LLMLX sin conexión':state.resources.llmlx.breaker_open?'● LLMLX en pausa por poca RAM':'● LLMLX listo'}</p>
+          <dl><dt>Motor</dt><dd>{state?.resources?.llmlx?.connected?(state.resources.llmlx.engine||'Conectado'):(state?.resources?.llmlx?.reason||'LocalLLM.app · 127.0.0.1:11500')}</dd><dt>Modelo</dt><dd>{state?.resources?.qwen.resident.length?'Cargado':'Sin cargar'}</dd><dt>RAM libre</dt><dd>{state?.resources?.llmlx?.available_gib!==undefined?`${state.resources.llmlx.available_gib.toFixed(2)} GiB · pausa < ${state.resources.llmlx.threshold_gib?.toFixed(1)} GiB`:'—'}</dd><dt>Presión</dt><dd>{state?.resources?.memory.pressure||'Sin medición'}</dd><dt>Laya</dt><dd>{state?.resources?.laya.status||'Comprobando'}</dd></dl>
           <button disabled={releasing||busy||state?.resources?.pipeline_busy} onClick={async()=>{setReleasing(true);setResourceNote('');try{const r=await post('resources/release',{});setResourceNote(r.message);setState(current=>current?{...current,resources:r.resources}:current);await refresh()}catch(e){setResourceNote((e as Error).message)}finally{setReleasing(false)}}}>{releasing?'Liberando y comprobando…':'Liberar memoria'}</button>
-          <small role="status">{resourceNote||(state?.resources?.provider?'Los modelos están en el servidor. Actualiza recursos locales sin descargar modelos remotos.':busy||state?.resources?.pipeline_busy?'Espera a que termine la petición activa.':'Descarga Qwen inactivo y comprueba el margen. No cierra aplicaciones ni elimina datos.')}</small>
+          <small role="status">{resourceNote||(busy||state?.resources?.pipeline_busy?'Espera a que termine la petición activa.':'Descarga el modelo de EscoIA en LLMLX. No cierra aplicaciones ni elimina datos.')}</small>
         </section>
         <div className="side-note">
           <span>◈</span>

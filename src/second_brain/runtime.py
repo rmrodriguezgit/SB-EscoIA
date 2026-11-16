@@ -9,7 +9,7 @@ def local_model():
     from pathlib import Path
     config=Path(__file__).resolve().parents[2]/'config/local-model.json'
     data=json.loads(config.read_text()) if config.exists() else {}
-    return os.environ.get('BRAIN_MODEL',data.get('model','qwen2.5:3b-instruct-q4_K_M'))
+    return os.environ.get('BRAIN_MODEL',data.get('model','llmlx:qwen3.5:4b'))
 
 def doctor():
     import platform, shutil
@@ -85,11 +85,14 @@ def model_reserve_gib():
     context=int(os.environ.get('BRAIN_CONTEXT','4096'))
     from .uzu_local import RESERVE_GIB as UZU_RESERVE
     from .llmlx_local import RESERVE_GIB as LLMLX_RESERVE
+    if model.startswith('llmlx:'):return 0.0  # memoria gestionada por LLMLX
     return {**LLMLX_RESERVE,'uzu:qwen3.5:0.8b:4bit':UZU_RESERVE,'qwen2.5:1.5b-instruct-q4_K_M':1.5,'qwen2.5:3b-instruct-q4_K_M':2.5,'qwen2.5:7b-instruct-q4_K_M':5.5}.get(model,6.0)+max(0,context-4096)*0.00015
 
 def assert_resources(reserve_gib=None,force_local=False):
     from . import remote_ai
     if not force_local and remote_ai.enabled() and (reserve_gib is None or reserve_gib in (1.0,1.5,2.5)):return {'provider':'Quant-AI T4','local_model_reserve_gib':0}
+    from . import llmlx_local
+    if reserve_gib is None and llmlx_local.is_llmlx(local_model()):return llmlx_local.check()
     if reserve_gib is None:reserve_gib=model_reserve_gib()
     try:
         stats=subprocess.run(['vm_stat'],capture_output=True,text=True,timeout=5,check=True).stdout
@@ -211,7 +214,7 @@ def _answer(brain,question,career='',use_model=True,program_metadata=None,run_id
         return {'text':'Qwen no está disponible. Las fuentes pertinentes están debajo; comprueba la conexión del proveedor de inferencia para obtener una respuesta procesada y revisada.','sources':evidence,'mode':'Qwen pendiente','validation':{'status':'not_run'},'run_id':run}
     try:
         assert_resources()
-        brain.event(run,'Qwen','Procesando evidencia curricular con Ollama')
+        brain.event(run,'Qwen','Procesando evidencia curricular con '+('LLMLX' if local_model().startswith('llmlx:') else 'Ollama'))
         instruction=question+'\nResponde en máximo seis párrafos breves con citas [n]. No copies encabezados ni fragmentos inconexos. Si hay discrepancias entre anexos, explícalas. No omitas asignaturas del mapa curricular en consultas de semestre.'
         text=infer(instruction,evidence)
         checks=deterministic_checks(text,evidence)
@@ -229,14 +232,22 @@ def _answer(brain,question,career='',use_model=True,program_metadata=None,run_id
             if time.monotonic()>deadline:raise RuntimeError('Ollama no liberó el modelo para la revisión de Laya')
             time.sleep(0.2)
         brain.event(run,'Laya','Contrastando afirmaciones con evidencia; revisión probabilística')
-        validation=validate_answer(brain.home,text,evidence)
+        try:validation=validate_answer(brain.home,text,evidence)
+        except RuntimeError as e:
+            # Con LLMLX la generación no depende de LAYA: si LAYA no cabe en memoria, se entrega con las comprobaciones de reglas.
+            if not local_model().startswith('llmlx:'):raise
+            validation={'status':'not_run','reason':'LAYA no se ejecutó: '+str(e)}
+        if validation.get('status') in {'not_run','unavailable'} and local_model().startswith('llmlx:'):
+            validation['deterministic']=checks
+            brain.event(run,'completada','Respuesta de LLMLX con comprobaciones de reglas; LAYA no ejecutada')
+            return {'text':text,'sources':evidence,'mode':'Qwen · LLMLX · sin revisión LAYA','validation':validation,'run_id':run,'career':career,'notice':validation.get('reason','')}
         validation['deterministic']=checks
         if not validation.get('passed'):
             if fallback:return grounded_fallback('Borrador de Qwen no aprobado por Laya; se muestra consulta directa con fuentes',validation)
             brain.event(run,'retenida','Laya no aprobó la respuesta o no pudo revisar toda la evidencia')
             return {'text':'La respuesta quedó retenida para revisión: Laya no pudo confirmar suficiente sustento. Consulta las fuentes originales.','sources':evidence,'mode':'Revisión pendiente','validation':validation,'run_id':run}
         brain.event(run,'completada','Respuesta con fuentes y revisión de Laya terminada')
-        return {'text':text,'sources':evidence,'mode':'Qwen + LAYA' ,'validation':validation,'run_id':run,'career':career}
+        return {'text':text,'sources':evidence,'mode':'Qwen · LLMLX + LAYA' if local_model().startswith('llmlx:') else 'Qwen + LAYA','validation':validation,'run_id':run,'career':career}
     except Exception as e:
         if fallback:return grounded_fallback(str(e),{'status':'not_completed','reason':str(e)})
         brain.event(run,'bloqueada',str(e))

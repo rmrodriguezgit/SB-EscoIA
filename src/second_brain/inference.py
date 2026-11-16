@@ -7,14 +7,17 @@ LOCK=threading.RLock()
 _active=None
 _reason=''
 def preferred():
- return json.loads(CONFIG.read_text()).get('mode','remote') if CONFIG.exists() else 'remote'
+ return 'local'  # Solo LLMLX: el motor remoto no se ofrece
 def status():
  from .runtime import local_model
- with LOCK:return {'preferred':preferred(),'active':_active or preferred(),'reason':_reason,'local_model':local_model(),'local_models':LOCAL_MODELS}
+ from . import llmlx_local
+ try:models=llmlx_local.installed()
+ except (RuntimeError,ValueError):models=[{'name':m,'size_gib':None} for m in LOCAL_MODELS]
+ with LOCK:return {'preferred':preferred(),'active':_active or preferred(),'reason':_reason,'local_model':local_model(),'local_models':[m['name'] for m in models],'local_models_info':models}
 def remote():return status()['active']=='remote'
 def select(mode):
  global _active,_reason
- if mode not in {'remote','local'}:raise ValueError('Motor inválido')
+ if mode!='local':raise ValueError('Solo está habilitado el motor local LLMLX')
  from .runtime import PIPELINE_LOCK
  if not PIPELINE_LOCK.acquire(blocking=False):raise ValueError('Espera a que termine la petición activa')
  try:
@@ -58,15 +61,16 @@ def ensure_ollama():
     time.sleep(.15)
   raise RuntimeError('Ollama local no pudo iniciarse; revisa data/ollama.log')
 
-LOCAL_MODELS=['uzu:qwen3.5:0.8b:4bit','qwen2.5:1.5b-instruct-q4_K_M','qwen2.5:3b-instruct-q4_K_M','llmlx:qwen3.5:4b','llmlx:qwen3:8b']
+LOCAL_MODELS=['llmlx:qwen3.5:4b','llmlx:qwen3:8b']  # respaldo si LLMLX no responde; el selector lista lo instalado
 def select_model(model):
- if model not in LOCAL_MODELS:raise ValueError('Modelo local no permitido')
+ # Cualquier modelo de conversación instalado en LLMLX; nada fuera de LLMLX.
+ if not isinstance(model,str) or not model.startswith('llmlx:'):raise ValueError('Modelo local no permitido')
  if model.startswith('uzu:'):
   from .uzu_local import available
   if not available():raise ValueError('Uzu requiere completar scripts/preparar-uzu.sh; consulta docs/uzu.md')
  if model.startswith('llmlx:'):
   from . import llmlx_local
-  try:installed={m['name'] for m in llmlx_local.request('/api/tags',timeout=3).get('models',[])}
+  try:installed={m['name'] for m in llmlx_local.request('/api/tags',timeout=3).get('models',[]) if 'completion' in (m.get('capabilities') or ['completion'])}
   except RuntimeError as e:raise ValueError(str(e)) from None
   if model not in installed:raise ValueError('LLMLX aún no tiene '+llmlx_local.engine_name(model)+' instalado; espera a que LocalLLM termine la descarga')
  from . import runtime,resources

@@ -11,9 +11,9 @@ class UzuTests(unittest.TestCase):
   with patch.object(uzu_local,'available',return_value=True),patch.object(uzu_local.subprocess,'run',side_effect=subprocess.TimeoutExpired('worker',120)):
    with self.assertRaisesRegex(RuntimeError,'límite'):uzu_local.request('/api/chat',{'messages':[]})
   self.assertFalse(uzu_local.LOCK.locked())
- def test_unprepared_selection_rejected(self):
-  with patch.object(uzu_local,'available',return_value=False):
-   with self.assertRaisesRegex(ValueError,'preparar'):inference.select_model(uzu_local.MODEL)
+ def test_uzu_not_selectable(self):
+  # Solo LLMLX está habilitado como motor de conversación.
+  with self.assertRaisesRegex(ValueError,'no permitido'):inference.select_model(uzu_local.MODEL)
  def test_memory_reserve(self):
   with patch.object(runtime,'local_model',return_value=uzu_local.MODEL):self.assertGreaterEqual(runtime.model_reserve_gib(),0.85)
   # Nunca por debajo del pico medido del proceso Uzu (0,724 GiB).

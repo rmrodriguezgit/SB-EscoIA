@@ -28,6 +28,13 @@ def snapshot(home):
    reserve=0 if remote_ai.enabled() else model_reserve_gib();headroom=memory['limit_gib']-memory['used_gib']
    memory.update(headroom_gib=round(headroom,2),reserve_gib=round(reserve,2),shortfall_gib=round(max(0,reserve-headroom),2),can_load=headroom>=reserve and memory.get('pressure')=='Normal')
   _cache={'memory':memory,'qwen':{'server_available':available,'resident':resident,'status':'Cargado' if resident else 'Disponible sin cargar' if available else 'Sin conexión'},'laya':{'available':laya_available,'status':'Revisando' if LAYA_PID else 'Disponible sin cargar' if laya_available else 'No instalado'},'pipeline_busy':PIPELINE_LOCK.locked(),'cpu_threads':THREADS,'io_workers':2,'pdf_workers':2,'generation_parallel':1}
+  from . import llmlx_local
+  if llmlx_local.is_llmlx(local_model()):
+   lx=POOL.submit(llmlx_local.status)
+   try:_cache['llmlx']=lx.result(timeout=5)
+   except Exception:_cache['llmlx']={'connected':False,'reason':'LLMLX no respondió'}
+   _cache['memory']['can_load']=bool(_cache['llmlx'].get('connected')) and not _cache['llmlx'].get('breaker_open')
+   _cache['model']=local_model()
   if remote_ai.enabled():
    from .runtime import model_status
    remote=model_status();_cache['provider']='Quant-AI T4';_cache['qwen']={'server_available':remote['available'],'resident':[],'status':'Remoto · T4' if remote['available'] else 'Remoto sin conexión'};_cache['laya']={'available':remote['available'],'status':'Remoto · multilingual' if remote['available'] else 'Remoto sin conexión'}
@@ -58,7 +65,11 @@ def release_models(home):
   PIPELINE_LOCK.release();_stamp=0
  resources=snapshot(home);memory=resources.get('memory',{});after=memory.get('used_gib')
  message=warning+('Modelo de EscoIA descargado. ' if released else 'No había modelos de EscoIA cargados. ')
- if before is not None and after is not None:
+ lx=resources.get('llmlx')
+ if lx is not None:
+  if before is not None and after is not None:message+=f'Memoria medida: {before:.2f} → {after:.2f} GiB. '
+  message+=('LLMLX conectado' if lx.get('connected') else 'LLMLX sin conexión')+(f": {lx['available_gib']:.2f} GiB disponibles" if 'available_gib' in lx else '')+('; breaker abierto por poca RAM.' if lx.get('breaker_open') else '.')
+ elif before is not None and after is not None:
   message+=f'Memoria medida: {before:.2f} → {after:.2f} GiB. '
   message+=('Hay margen estimado para Qwen.' if memory['can_load'] else f"Faltan {memory['shortfall_gib']:.2f} GiB para Qwen con su reserva de {memory['reserve_gib']:.2f} GiB. Cierra aplicaciones o usa EscoIA fuera de Codex." if memory.get('pressure')=='Normal' else 'La presión de memoria es alta; espera o cierra aplicaciones.')
  else:message+='No se pudo medir el margen; no se garantiza que el modelo pueda cargar.'
