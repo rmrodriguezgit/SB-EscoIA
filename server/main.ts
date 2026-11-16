@@ -540,6 +540,31 @@ const server = create(async (req: IncomingMessage, res: ServerResponse) => {
         return send(res, 200, { offering: { id: offer.id, subject: offer.subject, group: offer.group_code, teacher: offer.teacher, term: offer.term }, threshold, sessions: [...sessions.values()], students: list,
           note: "Porcentaje = (presentes + retardos) / (clases impartidas − justificadas). Una clase pasada sin registro cuenta como falta." });
       }
+      // Horarios propios: el docente da de alta bloques semanales solo sobre ofertas (grupo↔materia) asignadas por administración.
+      if (path === "/api/schedules/rooms" && req.method === "GET") return send(res, 200, await native.call("rooms"));
+      if (path === "/api/schedules/block" && req.method === "POST") {
+        const b = z.object({
+          offeringId: id, roomId: id, weekday: z.number().int().min(1).max(6),
+          start: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/), end: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+          from: z.string().regex(/^20\d{2}-\d{2}-\d{2}$/), weeks: z.number().int().min(1).max(20),
+        }).parse(await json(req));
+        await ownOffering(b.offeringId);
+        if (b.end <= b.start) throw Error("La hora de fin debe ser posterior al inicio");
+        if (!(await native.call<Row[]>("rooms")).some(r => r.id === b.roomId)) throw Error("Aula inexistente");
+        // Ciudad de México sin horario de verano desde 2022: UTC−06:00 fijo.
+        const first = new Date(b.from + "T00:00:00-06:00");
+        const shift = (b.weekday - ((first.getUTCDay() + 6) % 7 + 1) + 7) % 7;
+        const steps: { op: string; params: unknown[] }[] = [];
+        for (let w = 0; w < b.weeks; w++) {
+          const day = new Date(first.getTime() + (shift + 7 * w) * 86400000).toISOString().slice(0, 10);
+          const starts = Date.parse(`${day}T${b.start}:00-06:00`) / 1000, ends = Date.parse(`${day}T${b.end}:00-06:00`) / 1000;
+          steps.push({ op: "schedule_create", params: [b.offeringId, b.roomId, starts, ends] });
+        }
+        steps.push({ op: "audit_create", params: [actor.id, "horario-bloque", String(b.offeringId), Math.floor(Date.now() / 1000), JSON.stringify(b)] });
+        try { await native.batch(steps); }
+        catch (e) { throw Error(/conflict/i.test(String((e as Error).message)) ? "Conflicto de horario: el aula, el grupo o el docente ya tienen clase en ese bloque; no se creó ninguna sesión" : (e as Error).message); }
+        return send(res, 200, { created: b.weeks, message: `Se crearon ${b.weeks} sesiones semanales` });
+      }
       if (path === "/api/attendance/set" && req.method === "POST") {
         const b = z.object({ sessionId: id, studentId: id, status: z.enum(["present", "late", "excused", "absent"]), note: z.string().trim().min(5, "Justifica la edición (mínimo 5 caracteres)").max(500) }).parse(await json(req));
         const [sess] = await native.call<Row[]>("session", [b.sessionId]);

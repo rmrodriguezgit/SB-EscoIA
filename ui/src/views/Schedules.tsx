@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { MyBlocks } from "./MyBlocks";
 import { tool } from "../api";
 import { scheduler } from "../lib/shared";
 import { useTask, Status, Result, Field, Id } from "../components/common";
@@ -52,6 +53,8 @@ export function Schedules({ admin }: { admin: boolean }) {
     });
   }
   return (
+    <>
+    <MyBlocks />
     <section>
       <h2>Horarios y cierre de sesiones</h2>
       <button
@@ -149,5 +152,6 @@ export function Schedules({ admin }: { admin: boolean }) {
       <Status task={task} />
       <Result value={task.result} />
     </section>
+    </>
   );
 }
