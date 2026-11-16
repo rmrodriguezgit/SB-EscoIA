@@ -505,6 +505,53 @@ const server = create(async (req: IncomingMessage, res: ServerResponse) => {
         const matrix = monthlyMatrix(rows,sources);
         return send(res,200,{month,rows,matrix,note:"Las faltas se calculan contra el horario semanal y las inscripciones actuales. Los días inhábiles requieren cancelar la clase; no se generan sesiones."});
       }
+      // Calificaciones · fase 1: historial de asistencia por oferta (fechas × alumnos), con aislamiento por docente.
+      const ownOffering = async (offeringId: number) => {
+        const offer = (await native.call<Row[]>("offerings")).find(o => o.id === offeringId);
+        if (!offer) throw Error("Grupo/materia inexistente");
+        if (!actor.roles.includes("admin") && offer.teacher_id !== session.profile.teacherId) throw Error("Solo puedes consultar tus propios grupos");
+        return offer;
+      };
+      if (path === "/api/offerings/mine" && req.method === "GET") {
+        const offers = await native.call<Row[]>("offerings");
+        return send(res, 200, actor.roles.includes("admin") ? offers : offers.filter(o => o.teacher_id === session.profile.teacherId));
+      }
+      if (path === "/api/attendance/history" && req.method === "GET") {
+        const offer = await ownOffering(id.parse(Number(url.searchParams.get("offering"))));
+        const threshold = Math.min(100, Math.max(50, Number(url.searchParams.get("threshold") ?? 80)));
+        const rows = await native.call<Row[]>("attendance_history", [offer.id]);
+        const now = Date.now() / 1000;
+        const sessions = new Map<number, Row>(), students = new Map<number, Row>();
+        for (const r of rows) {
+          if (!sessions.has(r.session_id)) sessions.set(r.session_id, { id: r.session_id, starts: r.starts, ends: r.ends, cancelled: !!r.cancelled, past: r.starts <= now });
+          let st = students.get(r.student_id);
+          if (!st) { st = { id: r.student_id, number: r.number, name: r.name, cells: {} as Row }; students.set(r.student_id, st); }
+          st.cells[r.session_id] = { status: r.status ?? null, note: r.note ?? null, confidence: r.confidence ?? null };
+        }
+        const countable = [...sessions.values()].filter(s => s.past && !s.cancelled);
+        const list = [...students.values()].map(st => {
+          const c = (k: string) => countable.filter(s => st.cells[s.id]?.status === k).length;
+          const present = c("present"), late = c("late"), excused = c("excused");
+          const absent = countable.length - present - late - excused; // sin registro en clase pasada = falta
+          const base = countable.length - excused;
+          const pct = base > 0 ? Math.round(((present + late) / base) * 1000) / 10 : null;
+          return { ...st, stats: { present, late, excused, absent, sessions: countable.length, pct, risk: pct !== null && pct < threshold } };
+        }).sort((a: Row, b: Row) => String(a.name).localeCompare(String(b.name)));
+        return send(res, 200, { offering: { id: offer.id, subject: offer.subject, group: offer.group_code, teacher: offer.teacher, term: offer.term }, threshold, sessions: [...sessions.values()], students: list,
+          note: "Porcentaje = (presentes + retardos) / (clases impartidas − justificadas). Una clase pasada sin registro cuenta como falta." });
+      }
+      if (path === "/api/attendance/set" && req.method === "POST") {
+        const b = z.object({ sessionId: id, studentId: id, status: z.enum(["present", "late", "excused", "absent"]), note: z.string().trim().min(5, "Justifica la edición (mínimo 5 caracteres)").max(500) }).parse(await json(req));
+        const [sess] = await native.call<Row[]>("session", [b.sessionId]);
+        if (!sess) throw Error("Sesión inexistente");
+        await ownOffering(sess.offering_id);
+        if (sess.starts > Date.now() / 1000) throw Error("No se edita la asistencia de una clase futura");
+        await native.batch([
+          { op: "attendance_set", params: [b.sessionId, b.studentId, b.status, Math.floor(Date.now() / 1000), actor.id, b.note] },
+          { op: "audit_create", params: [actor.id, "asistencia-edicion", `${b.sessionId}:${b.studentId}`, Math.floor(Date.now() / 1000), JSON.stringify(b)] },
+        ]);
+        return send(res, 200, { message: "Asistencia actualizada con justificación auditada" });
+      }
       if (path === "/api/attendance/generate" && req.method === "POST") {
         if (!actor.roles.includes("admin"))
           throw Error("Se requiere administración");

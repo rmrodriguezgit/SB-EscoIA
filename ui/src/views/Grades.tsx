@@ -2,6 +2,7 @@ import { useState } from "react";
 import { tool, upload } from "../api";
 import { grades } from "../lib/shared";
 import { useTask, Status, Result, Id } from "../components/common";
+import { AttendanceHistory } from "./AttendanceHistory";
 export function Grades() {
   const [offering, setOffering] = useState("1"),
     [file, setFile] = useState<File | null>(null),
@@ -9,7 +10,9 @@ export function Grades() {
     [approved, setApproved] = useState(false),
     task = useTask();
   return (
-    <section>
+    <>
+    <AttendanceHistory />
+    <section className="no-print">
       <h2>Calificaciones · 20% / 20% / 60%</h2>
       <Id
         label="ID de oferta académica"
@@ -90,5 +93,6 @@ export function Grades() {
       <Status task={task} />
       <Result value={task.result} />
     </section>
+    </>
   );
 }
