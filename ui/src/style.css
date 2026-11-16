@@ -102,7 +102,7 @@ aside {
   margin-left: auto;
 }
 .avatar,
-.user {
+.top-status .user {
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -224,7 +224,7 @@ header {
   color: #adb8e0;
   background: #0d1328;
 }
-.user {
+.top-status .user {
   width: 30px;
   height: 30px;
   font-size: 11px;
@@ -1045,7 +1045,7 @@ input::placeholder,textarea::placeholder{color:#5f6f9c}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--ui-blue)!important;box-shadow:0 0 0 3px #60a5fa22}
 button:focus-visible,a:focus-visible{outline:2px solid var(--ui-blue)!important;outline-offset:2px}
 .pill{background:#5eead41a!important;color:var(--ui-teal)!important;border:1px solid #5eead455}
-.user{background:#1d2b5c!important;color:#fff!important}
+.top-status .user{background:#1d2b5c!important;color:#fff!important}
 .voice-button:not(.compact){background:#ffffff0d!important;color:#c9d4f5!important;border:1px solid var(--ui-line)!important}
 .voice-button.recording:not(.compact){background:#5eead4!important;color:#04201b!important}
 .pending-operation{background:#2a1416;border-color:#7f2d2d}
@@ -1056,3 +1056,6 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ui-blue)!important;
 :where(button:not([class])){background:#ffffff0d;color:var(--ui-text);border:1px solid var(--ui-line);border-radius:8px;padding:7px 12px}
 :where(button:not([class])):hover:not(:disabled){border-color:var(--ui-blue)}
 :where(input:not([type=checkbox]):not([type=radio]):not([class]),textarea:not([class]),select:not([class])){border:1px solid var(--ui-line);border-radius:8px;padding:7px 10px}
+.message.user{width:auto;max-width:min(78%,720px);margin-left:auto;text-align:right;background:linear-gradient(135deg,#1d2b5c,#16224a);border-color:#2f3f78;color:var(--ui-text);border-radius:13px 13px 4px 13px;padding:16px 20px}
+.message.user .message-label{justify-content:flex-end;color:#c9d4f5;margin-bottom:8px}
+.message.user .message-text{color:var(--ui-text)}
