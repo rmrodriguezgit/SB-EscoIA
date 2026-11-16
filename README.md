@@ -1,6 +1,6 @@
 # EscoIA · Sistema Escolar
 
-**Versión actual: 0.3.0** (2026-10-21) · rama `main` · [github.com/rmrodriguezgit/EscoIA](https://github.com/rmrodriguezgit/EscoIA)
+**Versión actual: 0.3.0** (2026-10-21) · rama `main` · [github.com/rmrodriguezgit/SB-EscoIA · sistema-escolar/](https://github.com/rmrodriguezgit/SB-EscoIA/tree/main/sistema-escolar)
 
 Sistema escolar local para Apple Silicon con interfaz en español. Incluye asistencia biométrica, listas, horarios, calificaciones e investigación, y usa IA local (LAYA/MLX, Qwen, Whisper). Los datos nunca salen de tu Mac.
 
