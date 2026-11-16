@@ -8,7 +8,7 @@ import type { Row } from './native.js';
  */
 export type MatrixValue = 1 | 0 | 'J' | null;
 export function cellValue(status: unknown): MatrixValue {
- if(status==='present') return 1;
+ if(status==='present'||status==='late') return 1;
  if(status==='excused') return 'J';
  if(status==='Pendiente'||status==='Cancelada') return null;
  return 0;
