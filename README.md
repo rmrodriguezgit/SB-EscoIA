@@ -133,6 +133,10 @@ Módulo integrado en Encuestas: [uso, arquitectura y límites](docs/mixed-resear
 
 Qwen3.5 0.8B mediante Uzu ARM64 está integrado como opción experimental junto a Ollama. Remoto sigue siendo predeterminado. Preparación, límites y estado de validación: [docs/uzu.md](docs/uzu.md).
 
+### Commits y push automáticos
+
+Cada commit se sube solo a GitHub (`.githooks/post-commit`). Al terminar cada turno de Claude Code, el hook `Stop` de `.claude/settings.json` ejecuta `scripts/autosync.sh`, que hace commit de lo pendiente y lo sube. Como el repositorio es público, `.githooks/pre-commit` bloquea `data/`, `memory/`, bases SQLite, `.env`, pesos, secretos, correos reales y rutas con el usuario de macOS; si bloquea, no se sube nada y se avisa. En un clon nuevo: `git config core.hooksPath .githooks`. Desactivar: `git config escoia.autosync false` (commit automático) o `git config escoia.autopush false` (push).
+
 ### App de escritorio (Electron)
 
 Abre `Abrir-EscoIA.command` con doble clic o ejecuta `./escoia-desktop.sh`. La primera vez instala Electron en
