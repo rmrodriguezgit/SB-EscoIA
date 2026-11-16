@@ -30,7 +30,34 @@ extern "C" int face_embedding(const char *image,const char *detector,const char 
  }catch(const cv::Exception &){return 6;}
 }
 static int emit(const char *image,const char *detector,const char *recognizer){float out[512];double pose;int rc=face_embedding(image,detector,recognizer,out,&pose);if(rc){std::cerr<<"Captura facial invalida: "<<rc<<"\n";return rc;}std::cout<<"{\"pose\":"<<pose<<",\"vector\":[";for(int i=0;i<512;i++){if(i)std::cout<<',';std::cout<<out[i];}std::cout<<"]}";return 0;}
+// Detección ligera para el recuadro en vivo: solo YuNet (sin ArcFace ni embedding). Lee rutas JPEG por stdin,
+// una por línea, y responde una línea JSON por imagen. La calidad usa los mismos criterios que face_embedding.
+static void detect_loop(const char *detector){
+ cv::setNumThreads(1);cv::Ptr<cv::FaceDetectorYN> det;std::string path;
+ while(std::getline(std::cin,path)){
+  try{
+   cv::Mat img=cv::imread(path);
+   if(img.empty()||img.cols>1920||img.rows>1920){std::cout<<"{\"error\":\"imagen\"}"<<std::endl;continue;}
+   if(det.empty())det=cv::FaceDetectorYN::create(detector,"",img.size(),0.6f,0.3f,5000);
+   det->setInputSize(img.size());cv::Mat faces;det->detect(img,faces);
+   std::string quality="ok";
+   int strong=0;for(int i=0;i<faces.rows;i++)if(faces.at<float>(i,14)>=0.9f)strong++;
+   if(faces.rows==0)quality="none";else if(faces.rows>1||strong>1)quality="multiple";else if(faces.at<float>(0,14)<0.9f)quality="weak";
+   else if(faces.at<float>(0,2)<80||faces.at<float>(0,3)<80)quality="small";
+   else{
+    cv::Rect area((int)faces.at<float>(0,0),(int)faces.at<float>(0,1),(int)faces.at<float>(0,2),(int)faces.at<float>(0,3));area&=cv::Rect(0,0,img.cols,img.rows);
+    if(area.width<80||area.height<80)quality="small";
+    else{cv::Mat gray,lap;cv::cvtColor(img(area),gray,cv::COLOR_BGR2GRAY);cv::Laplacian(gray,lap,CV_64F);cv::Scalar m,d;cv::meanStdDev(lap,m,d);double light=cv::mean(gray)[0];
+     if(d[0]*d[0]<10)quality="blur";else if(light<18)quality="dark";else if(light>245)quality="bright";}
+   }
+   std::cout<<"{\"width\":"<<img.cols<<",\"height\":"<<img.rows<<",\"quality\":\""<<quality<<"\",\"faces\":[";
+   for(int i=0;i<faces.rows&&i<5;i++){if(i)std::cout<<",";std::cout<<"{\"x\":"<<faces.at<float>(i,0)<<",\"y\":"<<faces.at<float>(i,1)<<",\"w\":"<<faces.at<float>(i,2)<<",\"h\":"<<faces.at<float>(i,3)<<",\"score\":"<<faces.at<float>(i,14)<<"}";}
+   std::cout<<"]}"<<std::endl;
+  }catch(const cv::Exception &){std::cout<<"{\"error\":\"opencv\"}"<<std::endl;}
+ }
+}
 int main(int argc,char **argv){
+ if(argc==3 && std::string(argv[1])=="--detect-stdin"){detect_loop(argv[2]);return 0;}
  if(argc==4){int rc=emit(argv[1],argv[2],argv[3]);if(!rc)std::cout<<"\n";return rc;}
  if(argc==7 && std::string(argv[1])=="--batch"){
   cv::setNumThreads(2);std::cout<<"[";

@@ -25,6 +25,8 @@ import { EventHub } from "./events.js";
 import { tools, type Principal, type Tool } from "./contracts.js";
 import { recordSchemas, id, requestId } from "./schemas.js";
 import { transcribe } from "./models.js";
+import { LiveFaceDetector, QUALITY_HINT } from "./face_detect.js";
+const liveFaces = new LiveFaceDetector();
 const native = new Native(),
   domain = new Domain(native),
   auth = new Auth(native),
@@ -540,6 +542,17 @@ const server = create(async (req: IncomingMessage, res: ServerResponse) => {
         return send(res, 200, { offering: { id: offer.id, subject: offer.subject, group: offer.group_code, teacher: offer.teacher, term: offer.term }, threshold, sessions: [...sessions.values()], students: list,
           note: "Porcentaje = (presentes + retardos) / (clases impartidas − justificadas). Una clase pasada sin registro cuenta como falta." });
       }
+      // Recuadro en vivo: solo detección (sin identificar ni guardar). El cuadro temporal se borra al terminar.
+      if (path === "/api/face/detect" && req.method === "POST") {
+        if (!actor.roles.includes("admin") && !actor.roles.includes("teacher")) throw Error("Se requiere un perfil docente");
+        const b = z.object({ frame: z.string().max(700000) }).parse(await json(req));
+        if (liveFaces.busy) return send(res, 200, { skipped: true });
+        const file = await domain.frame(b.frame);
+        try {
+          const d = await liveFaces.detect(file);
+          return send(res, 200, { ...d, hint: QUALITY_HINT[d.quality] ?? "" });
+        } finally { await rm(file, { force: true }); }
+      }
       // Horarios propios: el docente da de alta bloques semanales solo sobre ofertas (grupo↔materia) asignadas por administración.
       if (path === "/api/schedules/rooms" && req.method === "GET") return send(res, 200, await native.call("rooms"));
       if (path === "/api/schedules/block" && req.method === "POST") {
@@ -826,5 +839,6 @@ process.on("SIGINT", () => {
   for (const socket of wss.clients) socket.close();
   server.close();
   native.close();
+  liveFaces.close();
   void gateway.close();
 });

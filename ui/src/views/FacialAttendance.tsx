@@ -26,6 +26,8 @@ export function FacialAttendance({ admin }: { admin: boolean }) {
   const [classContext, setClassContext] = useState<Row | null>(null);
   const [search, setSearch] = useState("");
   const [lastRegistered, setLastRegistered] = useState("");
+  const [faceBox,setFaceBox] = useState<{x:number;y:number;w:number;h:number;score:number;quality:string;hint:string;count:number}|null>(null);
+  const [faceLabel,setFaceLabel] = useState<{text:string;kind:"present"|"late"|"unknown"|"done";until:number}|null>(null);
   const [lastRecognition,setLastRecognition] = useState<{name:string;number:string;at:number;duplicate:boolean;status?:string;confidence?:number}|null>(null);
   const [clock, setClock] = useState(Date.now());
   const [notice, setNotice] = useState<{kind:"success"|"warning"|"error"|"working"|"ready";title:string;detail:string} | null>(null);
@@ -76,6 +78,11 @@ export function FacialAttendance({ admin }: { admin: boolean }) {
     setNotice(nextNotice);
     if(payload.action === "verify" && identity) setLastRecognition({...identity,at:Date.now(),duplicate:!!result.alreadyRecorded,status:result.status,confidence:result.confidence});
     if(payload.action === "verify" && !result.alreadyRecorded) chime(result.status === "late" ? 440 : 880);
+    if(payload.action === "verify") {
+      const pct = typeof result.confidence === "number" ? ` · ${Math.round(result.confidence*100)}%` : "";
+      setFaceLabel({kind:result.alreadyRecorded ? "done" : result.status === "late" ? "late" : "present",
+        text:`${identity?.name ?? "Alumno"} · ${result.alreadyRecorded ? "ya registrado" : result.status === "late" ? "Retardo" : "Presente"}${pct}`,until:Date.now()+3000});
+    }
     if (!result.alreadyRegistered) {
       setRefreshRevision(value => value + 1);
       
@@ -149,6 +156,30 @@ export function FacialAttendance({ admin }: { admin: boolean }) {
       setNotice({kind:"warning",title:"Clase finalizada o cambiada",detail:"Confirma nuevamente docente y grupo antes de abrir la captura."});
     }
   }, [session, classContext, opened, clock]);
+  // Recuadro en vivo: detección ligera (sin identificar ni guardar) unas 4 veces por segundo mientras la cámara está activa.
+  useEffect(() => {
+    if (!opened || !active) { setFaceBox(null); return; }
+    let stopped = false;
+    const loop = async () => {
+      while (!stopped) {
+        const started = Date.now();
+        if (document.visibilityState === "visible" && video.current?.videoWidth) {
+          try {
+            const v = video.current, c = document.createElement("canvas");
+            c.width = v.videoWidth; c.height = v.videoHeight; c.getContext("2d")!.drawImage(v, 0, 0);
+            const d = await request("face/detect", { frame: c.toDataURL("image/jpeg", 0.7) });
+            if (!stopped && !d.skipped) {
+              const f = [...(d.faces || [])].sort((a: Row, b: Row) => b.w * b.h - a.w * a.h)[0];
+              setFaceBox(f ? { x: f.x / d.width, y: f.y / d.height, w: f.w / d.width, h: f.h / d.height, score: f.score, quality: d.quality, hint: d.hint, count: d.faces.length } : { x: 0, y: 0, w: 0, h: 0, score: 0, quality: d.quality, hint: d.hint, count: 0 });
+            }
+          } catch { if (!stopped) setFaceBox(null); }
+        }
+        await new Promise((r) => setTimeout(r, Math.max(80, 250 - (Date.now() - started))));
+      }
+    };
+    void loop();
+    return () => { stopped = true; };
+  }, [opened, active]);
   scanRunner.current = async () => {
     if (!video.current?.videoWidth || document.visibilityState !== "visible") return 900;
     const result = await perform(async () => {
@@ -163,6 +194,7 @@ export function FacialAttendance({ admin }: { admin: boolean }) {
         return await attendanceAction({action:"verify",sessionId:Number(session),challengeId:challenge.challengeId,frames:images,captureMode:"passive",supervised:true});
       } catch(error) {
         const message=error instanceof Error ? error.message : String(error);
+        if (/Identidad no confirmada/.test(message)) setFaceLabel({kind:"unknown",text:"No registrado · sin coincidencia en este grupo",until:Date.now()+2500});
         if (/único rostro|demasiado pequeño|borrosa|oscura|Identidad no confirmada/.test(message)) {
           setNotice({kind:"ready",title:"Esperando un rostro reconocible",detail:message+". No se registró asistencia; la cámara volverá a comprobar automáticamente."});
           return {waiting:true};
@@ -216,7 +248,11 @@ export function FacialAttendance({ admin }: { admin: boolean }) {
         <div className="capture-class-strip"><span>{classContext ? `${time(classContext.starts)}–${time(classContext.ends)}` : ""}</span><span>{new Date(clock).toLocaleDateString("es-MX",{timeZone:"America/Mexico_City"})}</span><span className="capture-live">● {active ? "Cámara activa" : "Cámara detenida"}</span></div>
         <div className="capture-dialog-body">
           <div className="capture-camera-column">
-            <div className="capture-camera-stage"><video ref={video} autoPlay muted playsInline /><div className="capture-camera-guide" aria-hidden="true" /><span>{active ? "Una persona a la vez · rostro centrado" : "Permite el acceso a la cámara para comenzar"}</span></div>
+            <div className="capture-camera-stage"><video ref={video} autoPlay muted playsInline />{(!faceBox || !faceBox.count) && <div className="capture-camera-guide" aria-hidden="true" />}
+              {faceBox && faceBox.count > 0 && (() => { const label = faceLabel && faceLabel.until > clock - 1000 ? faceLabel : null; const kind = label ? label.kind : faceBox.quality === "ok" ? "ok" : "warn";
+                return <div className={"face-box face-" + kind} style={{ left: `${faceBox.x * 100}%`, top: `${faceBox.y * 100}%`, width: `${faceBox.w * 100}%`, height: `${faceBox.h * 100}%` }} aria-hidden="true">
+                  <b>{label ? label.text : `${faceBox.hint} · detección ${Math.round(faceBox.score * 100)}%`}</b></div>; })()}
+              {faceBox && <span className="face-hint" role="status">{faceBox.count === 0 ? faceBox.hint : faceBox.count > 1 ? `${faceBox.count} rostros: ${faceBox.hint.toLowerCase()}` : faceBox.hint}</span>}<span>{active ? "Una persona a la vez · rostro centrado" : "Permite el acceso a la cámara para comenzar"}</span></div>
             {mode === "enroll" ? <div className="capture-authorization">
               <label className="check"><input type="checkbox" checked={identityConfirmed} disabled={task.busy || !studentIdentity} onChange={e => setIdentityConfirmed(e.target.checked)} />Confirmo que la persona es {studentIdentity ? `${studentIdentity.name} · ${studentIdentity.number}` : "el alumno seleccionado"}</label>
               <label className="check"><input type="checkbox" checked={consent} disabled={task.busy || !studentIdentity} onChange={e => setConsent(e.target.checked)} />El alumno otorgó consentimiento para guardar su rostro</label>
