@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # Repositorio PÚBLICO: bloquea datos privados, pesos, secretos y datos personales antes de que lleguen a GitHub.
 set -euo pipefail
-blocked=$(git diff --cached --name-only --diff-filter=ACM | grep -E '(^|/)(data|memory|logs)/|\.sqlite|\.db$|(^|/)\.env(\..*)?$|\.safetensors$|\.gguf$|\.npz$|\.pid$' | grep -v -E '\.env\.example$' || true)
+# Por defecto revisa lo preparado; ESCOIA_CHECK_RANGE=a..b revisa un rango (lo usa autosync para merges de subtree, que no ejecutan hooks).
+DIFF=(--cached); [[ -n "${ESCOIA_CHECK_RANGE:-}" ]] && DIFF=("$ESCOIA_CHECK_RANGE")
+blocked=$(git diff "${DIFF[@]}" --name-only --diff-filter=ACM | grep -E '(^|/)(data|memory|logs)/|\.sqlite3?$|\.db$|(^|/)\.env(\..*)?$|\.safetensors$|\.gguf$|\.npz$|\.pid$' | grep -v -E '\.env\.example$' || true)
 if [[ -n "$blocked" ]]; then
   echo "pre-commit: archivos privados o pesos en el commit:" >&2; echo "$blocked" >&2; exit 1
 fi
-added=$(git diff --cached -U0 --diff-filter=ACM -- . ':(exclude).githooks' | grep -E '^\+' | grep -v -E '^\+\+\+' || true)
-if grep -q -E '(sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9]{30,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY|QUANT_AI_API_TOKEN=[^ ]+)' <<<"$added"; then
+added=$(git diff "${DIFF[@]}" -U0 --diff-filter=ACM -- . ':(exclude).githooks' | grep -E '^\+' | grep -v -E '^\+\+\+' || true)
+if grep -q -E '(sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9]{30,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY|QUANT_AI_API_TOKEN=[A-Za-z0-9_.-]{16,})' <<<"$added"; then
   echo "pre-commit: posible secreto en el diff; revisa antes de commitear" >&2; exit 1
 fi
 # Correos reales (se permiten noreply y dominios de ejemplo) y rutas con el usuario de macOS.
