@@ -9,7 +9,7 @@ import json,os,re,time
 from pathlib import Path
 from .core import identifier
 
-SECTIONS=('Conversación','Biblioteca','Memoria','Actividad','Asistencia','Encuestas','Horarios','Calificaciones','Administración')
+SECTIONS=('Conversación','Biblioteca','Memoria','Investigaciones','Asistencia','Horarios','Calificaciones','Administración','Tareas')
 ACTIONS={
  'consulta':'Enviar una petición a la conversación principal de EscoIA (consultas curriculares con fuentes, crear programas o planeaciones, desarrollar temas o lecciones, órdenes de listas). text = la petición completa',
  'abrir':'Abrir una sección de la ventana principal. text = una de: '+', '.join(SECTIONS),
@@ -144,7 +144,7 @@ def decide(brain,pid,index,decision):
   memory=brain.remember(action['text'],source='Cerebro (aceptado en la interfaz)',kind='inbox',reference='cerebro:'+pid)
   result['message']='Recuerdo guardado en Memoria · bandeja';result['memory_id']=memory['id']
  elif kind=='tarea':
-  result['task_id']=brain.enqueue(action['text']);result['message']='Tarea encolada; su avance aparece en Actividad'
+  result['task_id']=brain.enqueue(action['text']);result['message']='Tarea encolada; su avance aparece en Tareas'
  elif kind=='liberar_memoria':
   from .resources import release_models
   result['message']=release_models(brain.home)['message']

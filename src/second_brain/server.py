@@ -17,18 +17,12 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith('/api/'):
             b=Brain(self.server.home)
             try:
-                if path=='/api/request-git':
-                    try:
-                        from . import request_git
-                        params=parse_qs(url.query);rid=params.get('id',[''])[0];action=params.get('action',['history'])[0]
-                        if action=='diff':return self.send({'diff':request_git.diff(b,rid,params.get('sha',[''])[0])})
-                        if action=='artifact':return self.send(request_git.artifact(b,rid,params.get('name',[''])[0]))
-                        return self.send(request_git.history(b,rid))
-                    except FileNotFoundError:return self.send({'error':'Expediente o archivo inexistente'},404)
-                    except (ValueError,UnicodeError) as exc:return self.send({'error':str(exc)},400)
                 if path=='/api/services':
                     from .services import academic_status
                     return self.send(academic_status())
+                if path=='/api/profile':
+                    from .services import academic_profiles
+                    return self.send(academic_profiles())
                 if path=='/api/galaxy':
                     from .galaxy import snapshot
                     return self.send(snapshot(b,(parse_qs(url.query).get('window') or ['24h'])[0]))
@@ -78,18 +72,6 @@ class Handler(BaseHTTPRequestHandler):
             if size>(3000000 if self.path=='/api/voice' else 500000 if self.path=='/api/research' else 50000):raise ValueError('Solicitud demasiado grande')
             args=json.loads(self.rfile.read(size));b=Brain(self.server.home)
             try:
-                if self.path=='/api/request-git':
-                    from . import request_git
-                    rid=args['id'];action=args['action']
-                    if action=='review':
-                        from .document_reviews import review
-                        return self.send(review(b,rid,args['name'],args['head'],args.get('revision')))
-                    if action=='rollback':return self.send(request_git.rollback(b,rid,args['sha'],args['head']))
-                    if action=='artifact':return self.send(request_git.artifact(b,rid,args['name'],args['text'],args['head']))
-                    if action=='reuse':return self.send(request_git.reuse(b,rid,args['head']))
-                    if action in {'delete','restore'}:return self.send(request_git.archive(b,rid,args['head'],action=='delete'))
-                    if action=='forget':return self.send(request_git.remove(b,rid,args['head'],args['confirmation']))
-                    raise ValueError('Operación Git inválida')
                 if self.path=='/api/cerebro':
                     from . import cerebro
                     return self.send(cerebro.ask(b,args['question'],args.get('history')))
@@ -99,6 +81,10 @@ class Handler(BaseHTTPRequestHandler):
                 if self.path=='/api/attendance/decision':
                     from . import attendance_commands
                     return self.send(attendance_commands.decide(b,args['id'],args['decision']))
+                if self.path=='/api/profile':
+                    from .services import switch_profile,set_pin
+                    if 'pin_new' in args:return self.send(set_pin(args['pin_new']))
+                    return self.send(switch_profile(args['userId'],args.get('pin','')))
                 if self.path=='/api/services/reconnect':
                     from .services import recover_academic
                     return self.send(recover_academic(self.server.home))
@@ -107,6 +93,11 @@ class Handler(BaseHTTPRequestHandler):
                     return self.send(select_model(args['model']) if 'model' in args else select(args['mode']))
                 if self.path=='/api/request':
                     from . import request_records
+                    if args.get('action')=='review':
+                        # Revisión LAYA del expediente; el historial Git por petición es interno (sin panel).
+                        from . import request_git
+                        from .document_reviews import review
+                        return self.send(review(b,args['id'],'request.md',request_git.history(b,args['id'])['head'],args.get('revision')))
                     if args.get('action')=='verify':return self.send(request_records.recheck(b,args['id']))
                     return self.send(request_records.edit(b,args['id'],args['markdown'],args['revision']))
                 if self.path=='/api/research':

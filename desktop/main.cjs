@@ -11,7 +11,7 @@
 //   - SIGTERM al grupo del coordinador (worker Uzu/LAYA incluidos), luego SIGKILL si no termina, y barrido final;
 //   - el módulo académico se detiene solo si lo lanzó esta app.
 //   Si hay una petición en curso se pide confirmación antes de salir.
-const { app, BrowserWindow, dialog, shell } = require("electron");
+const { app, BrowserWindow, dialog, shell, ipcMain } = require("electron");
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
@@ -134,17 +134,36 @@ async function requestQuit(origin) {
   return closing;
 }
 
-function createWindow() {
-  win = new BrowserWindow({
-    width: 1360, height: 880, minWidth: 900, minHeight: 600, title: "EscoIA",
-    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
-  });
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith(URL_BASE + "/")) return { action: "allow" };   // descargas y fuentes servidas por EscoIA
+const SECURE = { contextIsolation: true, nodeIntegration: false, sandbox: true, preload: path.join(__dirname, "preload.cjs") };
+function guard(contents) {
+  contents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith(URL_BASE + "/")) return { action: "allow", overrideBrowserWindowOptions: { webPreferences: SECURE } };   // descargas y fuentes servidas por EscoIA
     if (/^https?:\/\//.test(url)) shell.openExternal(url);
     return { action: "deny" };
   });
-  win.webContents.on("will-navigate", (e, url) => { if (!url.startsWith(URL_BASE)) { e.preventDefault(); if (/^https?:\/\//.test(url)) shell.openExternal(url); } });
+  contents.on("will-navigate", (e, url) => { if (!url.startsWith(URL_BASE)) { e.preventDefault(); if (/^https?:\/\//.test(url)) shell.openExternal(url); } });
+}
+// Ventanas independientes (p. ej. «Explorar» de Cuerdas): una por vista, lista cerrada.
+const VIEWS = { cuerdas: "Cuerdas · EscoIA" };
+const views = new Map();
+ipcMain.handle("escoia:open-window", (event, view) => {
+  if (!Object.hasOwn(VIEWS, view) || !event.senderFrame?.url.startsWith(URL_BASE + "/")) return false;
+  const open = views.get(view);
+  if (open && !open.isDestroyed()) { if (open.isMinimized()) open.restore(); open.focus(); return true; }
+  const child = new BrowserWindow({ width: 1280, height: 820, minWidth: 720, minHeight: 480, title: VIEWS[view], webPreferences: SECURE });
+  guard(child.webContents);
+  child.on("closed", () => views.delete(view));
+  child.loadURL(URL_BASE + "/?vista=" + view);
+  views.set(view, child);
+  return true;
+});
+
+function createWindow() {
+  win = new BrowserWindow({
+    width: 1360, height: 880, minWidth: 900, minHeight: 600, title: "EscoIA",
+    webPreferences: SECURE,
+  });
+  guard(win.webContents);
   win.on("close", (e) => { if (!done) { e.preventDefault(); requestQuit("ventana cerrada"); } });
   win.loadURL(URL_BASE + "/");
   // Solo para verify-exit.sh: cierra la ventana como lo haría una persona.

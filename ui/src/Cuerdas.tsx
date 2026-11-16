@@ -1,3 +1,4 @@
+import { openExplorer } from './explorer';
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 
@@ -255,8 +256,8 @@ function RunDetail({run}:{run?:Run}){
  </div>;
 }
 
-export function Cuerdas({events,busy,module,academic}:{events:RequestEvent[];busy:boolean;module?:string;academic:AcademicEvent|null}){
- const [expanded,setExpanded]=useState(false),[collapsed,setCollapsed]=useState(false),[floating,setFloating]=useState(true);
+export function Cuerdas({events,busy,module,academic,standalone=false}:{events:RequestEvent[];busy:boolean;module?:string;academic:AcademicEvent|null;standalone?:boolean}){
+ const [expanded,setExpanded]=useState(standalone),[collapsed,setCollapsed]=useState(false),[floating,setFloating]=useState(true);
  const [selected,setSelected]=useState<string>();const [filter,setFilter]=useState<Set<Kind>>(()=>new Set(KINDS.map(k=>k.id)));
  const [position,setPosition]=useState(()=>({x:Math.max(8,window.innerWidth-444),y:90}));const drag=useRef<{x:number;y:number;px:number;py:number}|null>(null);
  const {data,error,window:win,setWindow}=useGalaxy(busy||expanded);
@@ -277,15 +278,36 @@ export function Cuerdas({events,busy,module,academic}:{events:RequestEvent[];bus
  const description=module?academic?.message:(stageRun?.steps.at(-1)?.message||'');
  const headline=!llm?'Conectando…':!llm.connected?'LLMLX sin conexión':llm.breaker_open?'Motor en pausa por RAM':generating?'Generando respuesta':'En reposo';
  const toggle=(k:Kind)=>setFilter(f=>{const n=new Set(f);if(n.has(k)&&n.size>1)n.delete(k);else n.add(k);return n});
- const map=(compact:boolean)=><StringsMap data={data} selected={selected} onSelect={id=>{setSelected(id);if(compact)setExpanded(true)}} filter={filter} compact={compact} stageRun={stageRun} stages={stages} busy={generating} paused={compact&&expanded}/>;
+ const map=(compact:boolean)=><StringsMap data={data} selected={selected} onSelect={id=>{setSelected(id);if(compact)explore()}} filter={filter} compact={compact} stageRun={stageRun} stages={stages} busy={generating} paused={compact&&expanded}/>;
 
+ // «Explorar» abre una ventana independiente (Electron por IPC o window.open); si se bloquea, el diagrama se expande aquí.
+ function explore(){if(!openExplorer('cuerdas'))setExpanded(true)}
+ const overlay=<>
+   <header className="gx-overlay-head">
+    <div className="gx-title"><span>TEORÍA DE CUERDAS · ESCOIA</span><b>Peticiones, trabajo y motor local</b></div>
+    <div className="gx-filters">{KINDS.map(k=><button key={k.id} className={filter.has(k.id)?'on':''} style={{'--k':k.color} as React.CSSProperties} onClick={()=>toggle(k.id)} aria-pressed={filter.has(k.id)}>{k.label} <small>{runs.filter(r=>r.kind===k.id).length}</small></button>)}</div>
+    {!standalone&&<button className="gx-close" onClick={()=>setExpanded(false)} aria-label="Cerrar el diagrama de cuerdas">✕</button>}
+   </header>
+   <div className="gx-overlay-body">
+    <div className="gx-stage-col">
+     {map(false)}
+     <div className="gx-status-legend">{(Object.keys(STATUS) as Status[]).filter(s=>counts[s]).map(s=><span key={s}><i style={{background:STATUS[s].color}}/>{STATUS[s].label} <b>{counts[s]}</b></span>)}<span className="gx-muted">Cuerda abierta = petición · bucle = tarea de cola/MCP · modo = etapas · cuerda rota = fallida · arriba: motor LLMLX y tensión de RAM (marca roja = pausa)</span></div>
+    </div>
+    <div className="gx-side">
+     <LlmPanel llm={llm} model={data?.model} window={win} setWindow={setWindow}/>
+     <RunDetail run={selectedRun||liveRun}/>
+     <div className="gx-card"><h3>Últimas peticiones</h3><ul className="gx-list">{runs.slice(0,10).map(r=><li key={r.id}><button className={r.id===selected?'on':''} onClick={()=>setSelected(r.id)}><i style={{background:STATUS[r.status].color}}/><span>{r.title||r.mode||r.id}</span><small>{ago(r.end)}</small></button></li>)}</ul></div>
+    </div>
+   </div>
+  </>;
+ if(standalone)return <div className="gx-overlay gx-window" aria-label="Cuerdas de EscoIA">{overlay}</div>;
  return <>
   <section className={'galaxy-panel'+(floating?' floating':'')} style={floating?{left:position.x,top:position.y}:undefined} aria-label="Cuerdas: peticiones y motor local">
    <div className="gx-head">
     {floating&&<button className="gx-drag" aria-label="Mover el panel de cuerdas; arrastra o usa las flechas" onPointerDown={e=>{drag.current={x:e.clientX,y:e.clientY,px:position.x,py:position.y};e.currentTarget.setPointerCapture(e.pointerId)}} onPointerMove={e=>{if(drag.current)setPosition(clamp(drag.current.px+e.clientX-drag.current.x,drag.current.py+e.clientY-drag.current.y))}} onPointerUp={()=>{drag.current=null}} onPointerCancel={()=>{drag.current=null}} onKeyDown={e=>{const d:Record<string,number[]>={ArrowLeft:[-20,0],ArrowRight:[20,0],ArrowUp:[0,-20],ArrowDown:[0,20]};if(d[e.key]){e.preventDefault();setPosition(p=>clamp(p.x+d[e.key][0],p.y+d[e.key][1]))}}}>⠿</button>}
     <div className="gx-title"><span>CUERDAS EN VIVO</span><b>{headline}</b></div>
     <div className="gx-actions">
-     <button onClick={()=>setExpanded(true)} title="Abrir el diagrama de cuerdas completo">⤢ Explorar</button>
+     <button onClick={explore} title="Abrir el diagrama de cuerdas en una ventana independiente">⤢ Explorar</button>
      <button onClick={()=>setFloating(!floating)} title={floating?'Anclar en la página':'Panel flotante'}>{floating?'↙':'↗'}</button>
      <button aria-label={collapsed?'Expandir':'Minimizar'} onClick={()=>setCollapsed(!collapsed)}>{collapsed?'+':'−'}</button>
     </div>
@@ -302,22 +324,7 @@ export function Cuerdas({events,busy,module,academic}:{events:RequestEvent[];bus
    <p className="gx-desc" aria-live="polite">{error?'Cuerdas sin datos: '+error:description||'Escribe o dicta una solicitud para ver vibrar su cuerda.'}</p>
   </section>
   {expanded&&createPortal(<div className="gx-overlay" role="dialog" aria-modal="true" aria-label="Cuerdas de EscoIA">
-   <header className="gx-overlay-head">
-    <div className="gx-title"><span>TEORÍA DE CUERDAS · ESCOIA</span><b>Peticiones, trabajo y motor local</b></div>
-    <div className="gx-filters">{KINDS.map(k=><button key={k.id} className={filter.has(k.id)?'on':''} style={{'--k':k.color} as React.CSSProperties} onClick={()=>toggle(k.id)} aria-pressed={filter.has(k.id)}>{k.label} <small>{runs.filter(r=>r.kind===k.id).length}</small></button>)}</div>
-    <button className="gx-close" onClick={()=>setExpanded(false)} aria-label="Cerrar el diagrama de cuerdas">✕</button>
-   </header>
-   <div className="gx-overlay-body">
-    <div className="gx-stage-col">
-     {map(false)}
-     <div className="gx-status-legend">{(Object.keys(STATUS) as Status[]).filter(s=>counts[s]).map(s=><span key={s}><i style={{background:STATUS[s].color}}/>{STATUS[s].label} <b>{counts[s]}</b></span>)}<span className="gx-muted">Cuerda abierta = petición · bucle = tarea de cola/MCP · modo = etapas · cuerda rota = fallida · arriba: motor LLMLX y tensión de RAM (marca roja = pausa)</span></div>
-    </div>
-    <div className="gx-side">
-     <LlmPanel llm={llm} model={data?.model} window={win} setWindow={setWindow}/>
-     <RunDetail run={selectedRun||liveRun}/>
-     <div className="gx-card"><h3>Últimas peticiones</h3><ul className="gx-list">{runs.slice(0,10).map(r=><li key={r.id}><button className={r.id===selected?'on':''} onClick={()=>setSelected(r.id)}><i style={{background:STATUS[r.status].color}}/><span>{r.title||r.mode||r.id}</span><small>{ago(r.end)}</small></button></li>)}</ul></div>
-    </div>
-   </div>
+{overlay}
   </div>,document.body)}
  </>;
 }

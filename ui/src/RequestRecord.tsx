@@ -18,8 +18,7 @@ export function RequestRecord({id,csrf,verification,onUpdate,onDirtyChange,initi
   setBusy(true);setError('');
   try{
    if(mode==='document'){
-    const h=await response(await fetch('/api/request-git?id='+id));
-    await response(await fetch('/api/request-git',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:JSON.stringify({id,action:'review',name:'request.md',head:h.head,revision:record?.revision})}));
+    await response(await fetch('/api/request',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:JSON.stringify({id,action:'review',revision:record?.revision})}));
     const d=await response(await fetch('/api/request?id='+id));setRecord(d);setText(d.markdown);
    }else{
     const d=await response(await fetch('/api/request',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:JSON.stringify(mode==='delivery'?{id,action:'verify'}:{id,markdown:text,revision:record?.revision})}));setRecord(d);setText(d.markdown);

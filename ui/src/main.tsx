@@ -5,7 +5,8 @@ import {AcademicAnswer} from './AcademicAnswer';
 import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
-import { RequestGit } from "./RequestGit";
+import { useProfile, ProfileSwitcher, LoginScreen, SECTIONS_BY_ROLE, initials } from "./Perfil";
+import { openExplorer } from "./explorer";
 import { RequestRecord } from "./RequestRecord";
 import { ResearchDashboard } from "./ResearchDashboard";
 import { VoiceInput } from "./VoiceInput";
@@ -62,12 +63,12 @@ const icons: Record<string, string> = {
   Conversación: "✧",
   Biblioteca: "▤",
   Memoria: "◇",
-  Actividad: "◷",
+  Investigaciones: "▧",
   Asistencia: "◎",
-  Encuestas: "▧",
   Horarios: "▦",
   Calificaciones: "✓",
   Administración: "⚙",
+  Tareas: "◷",
 };
 function App() {
   const [academicRevision,setAcademicRevision] = useState(0);
@@ -88,6 +89,18 @@ function App() {
       message: string;
     } | null>(null),
     [command, setCommand] = useState("");
+  const profile = useProfile(state?.csrf || "");
+  const role = profile.state?.profile?.role || "admin";
+  const isAdmin = role === "admin";
+  const visibleSections = SECTIONS_BY_ROLE[role].filter((x) => x in icons);
+  useEffect(() => {
+    if (!visibleSections.includes(section)) setSection("Conversación");
+  }, [role]);
+  async function pickProfile(p: { userId: number }, pin: string) {
+    await profile.switchTo(p.userId, pin);
+    setAcademicRevision((v) => v + 1);
+    setMessages([]);
+  }
   const academicModules: Record<string, string> = {
     Asistencia: "Asistencia",
     Horarios: "Horarios",
@@ -138,7 +151,7 @@ function App() {
     const intent = programIntent || lessonIntent ? "" : /asistencia/i.test(text)
       ? "Asistencia"
       : /encuesta|grupo focal|focus group/i.test(text)
-        ? "Encuestas"
+        ? "Investigaciones"
         : /horario/i.test(text)
           ? "Horarios"
           : /calificaci[oó]n|calificaciones/i.test(text)
@@ -159,7 +172,7 @@ function App() {
       setMessages((m) => [...m, { role: "assistant", ...data }]);
       await refresh();
     } catch (e) {
-      setError("Se perdió la conexión con el servicio. Revisa Actividad para ver el expediente y su resultado; si figura interrumpido, vuelve a enviar la petición.");
+      setError("Se perdió la conexión con el servicio. Abre el expediente de la respuesta para ver su resultado y su resultado; si figura interrumpido, vuelve a enviar la petición.");
     } finally {
       setBusy(false);
     }
@@ -176,6 +189,7 @@ function App() {
   }
   return (
     <div className="shell">
+      {profile.state?.locked && <LoginScreen state={profile.state} onPick={pickProfile} />}
       <aside>
         <a className="brand" href="/">
           <span className="mark">e</span>
@@ -185,16 +199,10 @@ function App() {
             <small>CONOCIMIENTO QUE CONECTA</small>
           </div>
         </a>
-        <div className="workspace">
-          <span className="avatar">R</span>
-          <div>
-            Mi espacio personal<small>Privado · En este Mac</small>
-          </div>
-          <span>⌄</span>
-        </div>
+        {state && <ProfileSwitcher state={profile.state} onPick={pickProfile} onSetPin={profile.setPin} />}
         <p className="nav-label">TU ESPACIO</p>
         <nav>
-          {Object.keys(icons).map((x) => (
+          {visibleSections.map((x) => (
             <button
               className={section === x ? "active" : ""}
               key={x}
@@ -204,7 +212,7 @@ function App() {
               }}
             >
               <span>{icons[x]}</span>
-              {x === "Actividad" ? "Actividad · Git" : x}
+              {x}
               {x === "Biblioteca" && <b>{state?.library.length || 0}</b>}
             </button>
           ))}
@@ -212,7 +220,7 @@ function App() {
         <section className="resource-panel" aria-label="Recursos del sistema">
           <h4>Estado del sistema</h4>
           <AcademicConnection csrf={state?.csrf || ""} onConnected={() => setAcademicRevision(v => v+1)} />
-          <label>Modelo LLMLX <select aria-label="Modelo LLMLX" value={state?.inference?.local_model||'llmlx:qwen3.5:4b'} disabled={busy||state?.resources?.pipeline_busy} onChange={async e=>{try{await post('inference',{model:e.target.value});await refresh()}catch(e){setError((e as Error).message)}}}>{(state?.inference?.local_models_info||[]).map(m=>{const free=state?.resources?.llmlx?.available_gib,need=m.size_gib===null?undefined:m.size_gib+(state?.resources?.llmlx?.threshold_gib??1.8),tight=free!==undefined&&need!==undefined&&free<need;return <option key={m.name} value={m.name}>{m.name.replace(/^llmlx:/,'')}{m.size_gib!==null?` · ${m.size_gib.toFixed(1)} GiB`:''}{tight?' · RAM justa':''}</option>})}</select></label>
+          {isAdmin && <label>Modelo LLMLX <select aria-label="Modelo LLMLX" value={state?.inference?.local_model||'llmlx:qwen3.5:4b'} disabled={busy||state?.resources?.pipeline_busy} onChange={async e=>{try{await post('inference',{model:e.target.value});await refresh()}catch(e){setError((e as Error).message)}}}>{(state?.inference?.local_models_info||[]).map(m=>{const free=state?.resources?.llmlx?.available_gib,need=m.size_gib===null?undefined:m.size_gib+(state?.resources?.llmlx?.threshold_gib??1.8),tight=free!==undefined&&need!==undefined&&free<need;return <option key={m.name} value={m.name}>{m.name.replace(/^llmlx:/,'')}{m.size_gib!==null?` · ${m.size_gib.toFixed(1)} GiB`:''}{tight?' · RAM justa':''}</option>})}</select></label>}
           <p role="status">{state?.resources?.pipeline_busy?'● Procesando':!state?.resources?.llmlx?'● Comprobando':!state.resources.llmlx.connected?'● LLMLX sin conexión':state.resources.llmlx.breaker_open?'● LLMLX en pausa por poca RAM':'● LLMLX listo'}</p>
           <dl><dt>Motor</dt><dd>{state?.resources?.llmlx?.connected?(state.resources.llmlx.engine||'Conectado'):(state?.resources?.llmlx?.reason||'LocalLLM.app · 127.0.0.1:11500')}</dd><dt>Modelo</dt><dd>{state?.resources?.qwen.resident.length?'Cargado':'Sin cargar'}</dd><dt>RAM libre</dt><dd>{state?.resources?.llmlx?.available_gib!==undefined?`${state.resources.llmlx.available_gib.toFixed(2)} GiB · pausa < ${state.resources.llmlx.threshold_gib?.toFixed(1)} GiB`:'—'}</dd><dt>Presión</dt><dd>{state?.resources?.memory.pressure||'Sin medición'}</dd><dt>Laya</dt><dd>{state?.resources?.laya.status||'Comprobando'}</dd></dl>
           <button disabled={releasing||busy||state?.resources?.pipeline_busy} onClick={async()=>{setReleasing(true);setResourceNote('');try{const r=await post('resources/release',{});setResourceNote(r.message);setState(current=>current?{...current,resources:r.resources}:current);await refresh()}catch(e){setResourceNote((e as Error).message)}finally{setReleasing(false)}}}>{releasing?'Liberando y comprobando…':'Liberar memoria'}</button>
@@ -238,26 +246,24 @@ function App() {
       <main>
         <header>
           <div>
-            <span className="breadcrumb">Mi espacio</span>
+            <span className="breadcrumb">{profile.state?.profile?.role==="teacher"?"Docente":"Administración"}</span>
             <span className="slash">/</span>
             {section}
           </div>
           <div className="top-status">
             <span className="pill">◉ Local</span>
-            <span className="user">R</span>
+            <span className="user" title={profile.state?.profile?.name}>{initials(profile.state?.profile?.name)}</span>
           </div>
         </header>
         <div className="content">
           {state && <Cerebro csrf={state.csrf} busy={busy||!!state.resources?.pipeline_busy} onRun={ui=>{setError("");if(ui.type==="abrir"){setSection(ui.text);return}setSection("Conversación");void send(ui.text)}}/>}
           <Cuerdas events={state?.events||[]} busy={busy} module={academicModules[section]?section:undefined} academic={academicEvent}/>
-          {section==="Encuestas" && <ResearchDashboard post={post} onBusy={setBusy}/>}
+          {section==="Investigaciones" && <ResearchDashboard post={post} onBusy={setBusy}/>}
           {academicModules[section] && (
             <>
               <div className="module-heading">
                 <h1>
-                  {section === "Encuestas"
-                    ? "Encuestas e investigación mixta"
-                    : section}
+                  {section}
                 </h1>
                 <p>
                   Operaciones académicas con permisos, datos y registros
@@ -665,11 +671,10 @@ function App() {
               </div>
             </>
           )}
-          {section === "Actividad" && (
+          {section === "Tareas" && (
             <>
-              {state && <RequestGit csrf={state.csrf}/>}
               <div className="page-heading">
-                <span className="eyebrow">CONSTELACIONES LOCALES</span>
+                <span className="eyebrow">TAREAS EN SEGUNDO PLANO</span>
                 <h1>Cada tarea tiene su ritmo.</h1>
                 <p>
                   Una cola persistente, agentes como roles y una sola inferencia
@@ -737,8 +742,9 @@ function App() {
                   </div>
                 </article>
               )}
-              <div className="event-list">
-                <h2>Registro de ejecución</h2>
+              {isAdmin && <ModelMetrics events={state?.events||[]} model={state?.inference?.local_model} />}
+              {isAdmin && <div className="event-list">
+                <h2>Auditoría · registro de ejecución</h2>
                 {state?.events.map((e) => (
                   <div key={e.id}>
                     <time>{new Date(e.at).toLocaleTimeString("es-MX")}</time>
@@ -746,7 +752,7 @@ function App() {
                     <p>{e.message}</p>
                   </div>
                 ))}
-              </div>
+              </div>}
             </>
           )}
         </div>
@@ -758,4 +764,28 @@ function App() {
     </div>
   );
 }
-createRoot(document.getElementById("root")!).render(<App />);
+function ModelMetrics({ events, model }: { events: RequestEvent[]; model?: string }) {
+  const by = (st: string) => events.filter((e) => e.state === st).length;
+  const rows: [string, number][] = [["Generaciones (Qwen)", by("Qwen")], ["Consultas al RAG", by("RAG")], ["Completadas", by("completada")], ["Fallidas", by("fallida")], ["Bloqueadas por recursos", by("bloqueada")], ["Revisiones LAYA", events.filter((e) => /laya/i.test(e.state)).length]];
+  return (
+    <section className="model-metrics" aria-label="Métricas del modelo">
+      <h2>Métricas del modelo · {model?.replace(/^llmlx:/, "LLMLX · ") || "local"}</h2>
+      <p className="muted">Sobre los últimos {events.length} eventos registrados.</p>
+      <dl>{rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
+    </section>
+  );
+}
+/** Ventana independiente de «Explorar»: solo las cuerdas, con su propio sondeo de estado. */
+function CuerdasWindow() {
+  const [events, setEvents] = useState<RequestEvent[]>([]), [busy, setBusy] = useState(false);
+  useEffect(() => {
+    document.title = "Cuerdas · EscoIA";
+    const tick = () => fetch("/api/state").then((r) => r.json()).then((s) => { setEvents(s.events || []); setBusy(!!s.resources?.pipeline_busy); }).catch(() => {});
+    tick();
+    const t = setInterval(tick, 1000);
+    return () => clearInterval(t);
+  }, []);
+  return <Cuerdas events={events} busy={busy} academic={null} standalone />;
+}
+const params = new URLSearchParams(location.search);
+createRoot(document.getElementById("root")!).render(params.get("vista") === "cuerdas" ? <CuerdasWindow /> : <App />);

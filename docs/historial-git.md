@@ -1,4 +1,6 @@
-# Actividad · Git
+# Historial Git por petición (interno)
+
+**Desde el 2026-11-16 no hay panel ni rutas HTTP**: la sección «Actividad · Git» y `/api/request-git` se retiraron (ver `docs/reingenieria.md`). El versionado sigue en segundo plano: cada petición, revisión LAYA y artefacto genera un commit local mediante `request_git.snapshot`. La revisión LAYA del expediente se pide desde la conversación (`POST /api/request` con `action:"review"`). Las operaciones de abajo siguen en el módulo `request_git`, pero ya no se exponen en la interfaz.
 
 Cada petición dispone de un repositorio Git privado en `data/request-git/<id>`.
 Se versionan Markdown, contrato, resultado, trazas de agentes y artefactos de

@@ -1,5 +1,5 @@
 """Recuperación acotada de servicios locales conocidos; sin comandos del usuario."""
-import json, os, subprocess, threading, time, urllib.request
+import json, os, subprocess, threading, time, urllib.error, urllib.request
 from pathlib import Path
 _lock = threading.Lock()
 
@@ -33,3 +33,37 @@ def recover_academic(home):
             if child.poll() is not None: break
             time.sleep(.25)
         return {**status, 'started': False, 'message': 'El servicio no respondió. Revisa data/logs/academic-service.log; comprueba Node.js y la configuración del módulo.'}
+
+ACADEMIC = 'http://127.0.0.1:8787'
+
+def _academic(path, payload=None, csrf=None, timeout=5):
+    """Llamada servidor a servidor al módulo académico (sin Origin, mismo host local)."""
+    headers = {'Content-Type': 'application/json'}
+    if csrf: headers['X-CSRF-Token'] = csrf
+    data = json.dumps(payload).encode() if payload is not None else None
+    req = urllib.request.Request(ACADEMIC + path, data=data, headers=headers, method='POST' if data is not None else 'GET')
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as response: return json.load(response)
+    except urllib.error.HTTPError as exc:
+        try: message = json.load(exc).get('error') or str(exc)
+        except Exception: message = str(exc)
+        raise ValueError(message) from None
+    except OSError:
+        raise RuntimeError('El servicio académico no responde; usa «Iniciar servicios»') from None
+
+def academic_profiles():
+    """Perfil activo (rol que decide el menú) y perfiles disponibles. La autorización real la aplica 8787."""
+    listing = _academic('/api/profiles')
+    me = _academic('/api/me')
+    return {'profile': me.get('profile'), 'locked': bool(me.get('locked')), 'profiles': listing.get('profiles', [])}
+
+def switch_profile(user_id, pin=''):
+    if not isinstance(user_id, int) or isinstance(user_id, bool): raise ValueError('Perfil no válido')
+    csrf = _academic('/api/me')['csrf']
+    _academic('/api/profile', {'userId': user_id, 'pin': str(pin or '')[:12]}, csrf)
+    return academic_profiles()
+
+def set_pin(pin):
+    csrf = _academic('/api/me')['csrf']
+    _academic('/api/profile/pin', {'pin': str(pin or '')[:12]}, csrf)
+    return academic_profiles()
