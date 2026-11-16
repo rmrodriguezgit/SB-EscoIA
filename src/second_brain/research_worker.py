@@ -51,6 +51,140 @@ def quantitative(payload):
    else:infer.update(status='calculated_conditional',statistic=stat,p=p,effect=effect,assumptions=assumptions,interpretation=('p < alpha: evidencia contra H0 bajo los supuestos.' if p<infer['alpha'] else 'p >= alpha: evidencia insuficiente para rechazar H0; no demuestra igualdad.'),limitations='Una prueba preespecificada; muestra por conveniencia no garantiza generalización. p no mide importancia ni probabilidad de H0.')
  return {'metrics':out,'inferential':infer}
 
+TESTS={
+ 't_one':'t de Student · una muestra','t_ind':'t de Student · muestras independientes','welch':'t de Welch · muestras independientes',
+ 't_paired':'t de Student · muestras pareadas','anova':'ANOVA de un factor','pearson':'Correlación de Pearson','regression':'Regresión lineal simple',
+ 'mannwhitney':'U de Mann-Whitney','wilcoxon':'Rangos con signo de Wilcoxon','kruskal':'H de Kruskal-Wallis','spearman':'Correlación de Spearman',
+ 'chi2_ind':'χ² de independencia','chi2_gof':'χ² de bondad de ajuste'}
+
+def _nums(v,name):
+ if not isinstance(v,list) or not v:raise ValueError(f'{name}: lista de números vacía')
+ out=[float(x) for x in v]
+ if not all(math.isfinite(x) for x in out):raise ValueError(f'{name}: valores no finitos')
+ return out
+
+def _magnitude(kind,v):
+ v=abs(v)
+ cuts={'d':(.2,.5,.8),'r':(.1,.3,.5),'eta2':(.01,.06,.14),'w':(.1,.3,.5)}[kind]
+ return 'despreciable' if v<cuts[0] else 'pequeño' if v<cuts[1] else 'mediano' if v<cuts[2] else 'grande'
+
+def hypothesis_test(payload):
+ """Prueba de hipótesis sobre datos ya capturados. Devuelve estadístico, p, gl, tamaño del efecto y supuestos; nunca inventa datos."""
+ from scipy import stats
+ test=payload.get('test');alpha=float(payload.get('alpha',.05));tails=payload.get('alternative','two-sided')
+ if test not in TESTS:raise ValueError('Prueba no permitida')
+ if not 0<alpha<1:raise ValueError('Alpha inválido')
+ if tails not in {'two-sided','less','greater'}:raise ValueError('Hipótesis alternativa inválida')
+ out={'test':test,'label':TESTS[test],'alpha':alpha,'alternative':tails,'warnings':[]}
+ x=lambda:_nums(payload.get('x'),'X');y=lambda:_nums(payload.get('y'),'Y')
+ def groups():
+  g=payload.get('groups') or {}
+  if not isinstance(g,dict) or len(g)<2:raise ValueError('Se requieren al menos dos grupos')
+  g={str(k):_nums(v,'Grupo '+str(k)) for k,v in g.items()}
+  if any(len(v)<2 for v in g.values()):raise ValueError('Cada grupo necesita al menos dos observaciones')
+  return g
+ if test=='t_one':
+  a=x();mu=float(payload.get('mu',0))
+  if len(a)<2:raise ValueError('Se requieren al menos dos observaciones')
+  r=stats.ttest_1samp(a,mu,alternative=tails);sd=statistics.stdev(a);d=(statistics.mean(a)-mu)/sd if sd else float('nan')
+  out.update(statistic=float(r.statistic),p=float(r.pvalue),df=len(a)-1,n=len(a),effect={'name':'d de Cohen','value':d,'magnitude':_magnitude('d',d)},
+   descriptives={'media':statistics.mean(a),'de':sd,'mu':mu},assumptions=['Observaciones independientes','Normalidad aproximada (o n ≥ 30)'])
+ elif test in {'t_ind','welch','mannwhitney'}:
+  g=groups()
+  if len(g)!=2:raise ValueError('Esta prueba compara exactamente dos grupos')
+  (ka,a),(kb,b)=g.items();na,nb=len(a),len(b)
+  if test=='mannwhitney':
+   r=stats.mannwhitneyu(a,b,alternative=tails);rb=1-2*float(r.statistic)/(na*nb)
+   out.update(statistic=float(r.statistic),p=float(r.pvalue),n=na+nb,effect={'name':'correlación biserial por rangos','value':rb,'magnitude':_magnitude('r',rb)},
+    descriptives={ka:{'mediana':statistics.median(a),'n':na},kb:{'mediana':statistics.median(b),'n':nb}},assumptions=['Grupos independientes','Variable al menos ordinal; formas de distribución comparables para hablar de medianas'])
+  else:
+   r=stats.ttest_ind(a,b,equal_var=test=='t_ind',alternative=tails)
+   sp=math.sqrt(((na-1)*statistics.variance(a)+(nb-1)*statistics.variance(b))/(na+nb-2));d=(statistics.mean(a)-statistics.mean(b))/sp if sp else float('nan')
+   g_=d*(1-3/(4*(na+nb)-9)) if math.isfinite(d) else d
+   df=float(r.df) if hasattr(r,'df') else na+nb-2
+   lev=stats.levene(a,b)
+   if test=='t_ind' and lev.pvalue<.05:out['warnings'].append(f'Levene p={lev.pvalue:.4f}: varianzas distintas; usa Welch')
+   out.update(statistic=float(r.statistic),p=float(r.pvalue),df=df,n=na+nb,effect={'name':'g de Hedges','value':g_,'magnitude':_magnitude('d',g_)},
+    descriptives={ka:{'media':statistics.mean(a),'de':statistics.stdev(a),'n':na},kb:{'media':statistics.mean(b),'de':statistics.stdev(b),'n':nb}},
+    assumptions=['Grupos independientes','Normalidad aproximada en cada grupo']+(['Varianzas homogéneas (Levene p=%.4f)'%lev.pvalue] if test=='t_ind' else []))
+ elif test in {'t_paired','wilcoxon'}:
+  a,b=x(),y()
+  if len(a)!=len(b):raise ValueError('Las muestras pareadas deben tener el mismo tamaño')
+  diff=[i-j for i,j in zip(a,b)]
+  if len(a)<3:raise ValueError('Se requieren al menos tres pares')
+  if test=='t_paired':
+   r=stats.ttest_rel(a,b,alternative=tails);sd=statistics.stdev(diff);dz=statistics.mean(diff)/sd if sd else float('nan')
+   out.update(statistic=float(r.statistic),p=float(r.pvalue),df=len(a)-1,n=len(a),effect={'name':'dz de Cohen','value':dz,'magnitude':_magnitude('d',dz)},
+    descriptives={'media_diferencia':statistics.mean(diff),'de_diferencia':sd},assumptions=['Pares dependientes','Diferencias aproximadamente normales'])
+  else:
+   nz=[d for d in diff if d!=0]
+   if len(nz)<3:raise ValueError('Muy pocas diferencias distintas de cero')
+   r=stats.wilcoxon(a,b,alternative=tails);ranks=stats.rankdata([abs(d) for d in nz])
+   wp=sum(rk for rk,d in zip(ranks,nz) if d>0);wn=sum(rk for rk,d in zip(ranks,nz) if d<0);rb=(wp-wn)/(wp+wn)
+   if len(nz)<len(diff):out['warnings'].append(f'{len(diff)-len(nz)} empate(s) en cero excluidos')
+   out.update(statistic=float(r.statistic),p=float(r.pvalue),n=len(a),effect={'name':'biserial por rangos pareada','value':rb,'magnitude':_magnitude('r',rb)},
+    descriptives={'mediana_diferencia':statistics.median(diff)},assumptions=['Pares dependientes','Distribución de diferencias aproximadamente simétrica'])
+ elif test in {'anova','kruskal'}:
+  g=groups();vals=list(g.values());n=sum(map(len,vals));k=len(vals)
+  if test=='anova':
+   r=stats.f_oneway(*vals);grand=statistics.mean([v for vs in vals for v in vs])
+   ssb=sum(len(v)*(statistics.mean(v)-grand)**2 for v in vals);sst=sum((v-grand)**2 for vs in vals for v in vs);eta=ssb/sst if sst else float('nan')
+   lev=stats.levene(*vals)
+   if lev.pvalue<.05:out['warnings'].append(f'Levene p={lev.pvalue:.4f}: varianzas heterogéneas; considera Kruskal-Wallis o Welch')
+   out.update(statistic=float(r.statistic),p=float(r.pvalue),df=[k-1,n-k],n=n,effect={'name':'η²','value':eta,'magnitude':_magnitude('eta2',eta)},
+    descriptives={kk:{'media':statistics.mean(v),'de':statistics.stdev(v),'n':len(v)} for kk,v in g.items()},assumptions=['Grupos independientes','Normalidad por grupo','Homogeneidad de varianzas (Levene p=%.4f)'%lev.pvalue])
+  else:
+   r=stats.kruskal(*vals);eps=(float(r.statistic)-k+1)/(n-k) if n>k else float('nan')
+   out.update(statistic=float(r.statistic),p=float(r.pvalue),df=k-1,n=n,effect={'name':'ε²','value':eps,'magnitude':_magnitude('eta2',eps)},
+    descriptives={kk:{'mediana':statistics.median(v),'n':len(v)} for kk,v in g.items()},assumptions=['Grupos independientes','Variable al menos ordinal'])
+  if out['p']<alpha:out['warnings'].append('Resultado global significativo: identifica qué grupos difieren con comparaciones post hoc (Tukey o Dunn), no incluidas')
+ elif test in {'pearson','spearman','regression'}:
+  a,b=x(),y()
+  if len(a)!=len(b):raise ValueError('X e Y deben tener el mismo tamaño')
+  if len(a)<4:raise ValueError('Se requieren al menos cuatro pares')
+  if len(set(a))<2 or len(set(b))<2:raise ValueError('Variable constante')
+  if test=='pearson':
+   r=stats.pearsonr(a,b,alternative=tails);out.update(statistic=float(r.statistic),p=float(r.pvalue),df=len(a)-2,n=len(a),effect={'name':'r (r² = %.3f)'%(r.statistic**2),'value':float(r.statistic),'magnitude':_magnitude('r',r.statistic)},assumptions=['Relación lineal','Normalidad bivariada aproximada','Sin valores atípicos influyentes'])
+  elif test=='spearman':
+   r=stats.spearmanr(a,b,alternative=tails);out.update(statistic=float(r.statistic),p=float(r.pvalue),n=len(a),effect={'name':'ρ de Spearman','value':float(r.statistic),'magnitude':_magnitude('r',r.statistic)},assumptions=['Relación monótona','Variables al menos ordinales'])
+  else:
+   r=stats.linregress(a,b);out.update(statistic=float(r.slope),p=float(r.pvalue),df=len(a)-2,n=len(a),effect={'name':'R²','value':float(r.rvalue**2),'magnitude':_magnitude('r',r.rvalue)},
+    descriptives={'pendiente':float(r.slope),'intercepto':float(r.intercept),'ee_pendiente':float(r.stderr),'ecuacion':f'Y = {r.intercept:.4g} + {r.slope:.4g}·X'},
+    assumptions=['Linealidad','Independencia de residuos','Homocedasticidad','Normalidad de residuos'])
+   if tails!='two-sided':out['warnings'].append('La regresión reporta p bilateral')
+ elif test=='chi2_ind':
+  table=payload.get('table')
+  if not isinstance(table,list) or len(table)<2 or any(not isinstance(r,list) or len(r)!=len(table[0]) for r in table) or len(table[0])<2:raise ValueError('Tabla de contingencia de al menos 2×2')
+  t=[[int(c) for c in r] for r in table]
+  if any(c<0 for r in t for c in r):raise ValueError('Frecuencias negativas')
+  res=stats.chi2_contingency(t,correction=False);n=sum(map(sum,t));v=math.sqrt(float(res.statistic)/(n*(min(len(t),len(t[0]))-1)))
+  low=int((res.expected_freq<5).sum())
+  if low:out['warnings'].append(f'{low} celda(s) con frecuencia esperada < 5: la aproximación χ² no es fiable (usa Fisher en 2×2 o agrupa categorías)')
+  out.update(statistic=float(res.statistic),p=float(res.pvalue),df=int(res.dof),n=n,effect={'name':'V de Cramér','value':v,'magnitude':_magnitude('r',v)},expected=res.expected_freq.tolist(),assumptions=['Observaciones independientes','Frecuencias esperadas ≥ 5'])
+  out['alternative']='two-sided'
+ elif test=='chi2_gof':
+  obs=[int(v) for v in (payload.get('observed') or [])]
+  if len(obs)<2 or any(v<0 for v in obs):raise ValueError('Frecuencias observadas de al menos dos categorías')
+  n=sum(obs);exp=payload.get('expected')
+  exp=[float(v) for v in exp] if exp else [n/len(obs)]*len(obs)
+  if len(exp)!=len(obs) or any(v<=0 for v in exp):raise ValueError('Frecuencias esperadas inválidas')
+  exp=[v*n/sum(exp) for v in exp]
+  if any(v<5 for v in exp):out['warnings'].append('Frecuencias esperadas < 5: aproximación χ² poco fiable')
+  r=stats.chisquare(obs,exp);w=math.sqrt(float(r.statistic)/n)
+  out.update(statistic=float(r.statistic),p=float(r.pvalue),df=len(obs)-1,n=n,effect={'name':'w de Cohen','value':w,'magnitude':_magnitude('w',w)},expected=exp,assumptions=['Observaciones independientes','Frecuencias esperadas ≥ 5'])
+  out['alternative']='two-sided'
+ if not math.isfinite(out.get('statistic',float('nan'))) or not math.isfinite(out.get('p',float('nan'))):
+  return {**out,'status':'invalid','reason':'Resultado no finito (datos constantes o varianza nula)','statistic':None,'p':None}
+ e=out['effect'];e['value']=float(e['value']) if math.isfinite(e['value']) else None
+ sig=out['p']<alpha
+ out['status']='calculated'
+ out['decision']='Se rechaza H0' if sig else 'No se rechaza H0'
+ out['interpretation']=(f"{out['label']}: estadístico = {out['statistic']:.4f}"+(f", gl = {out['df']}" if 'df' in out else '')+f", p = {out['p']:.4g} (α = {alpha}). "
+  +(f"Hay evidencia estadística contra H0" if sig else "No hay evidencia suficiente para rechazar H0")
+  +(f"; tamaño del efecto {e['name']} = {e['value']:.3f} ({e['magnitude']})." if e['value'] is not None else '.')
+  +" La significación no implica causalidad ni importancia práctica; revisa los supuestos.")
+ return out
+
 def pdf(payload):
  from reportlab.platypus import SimpleDocTemplate,Paragraph,Spacer,Table,TableStyle,PageBreak,KeepTogether
  from reportlab.lib.styles import getSampleStyleSheet
@@ -96,6 +230,7 @@ if __name__=='__main__':
  try:
   if payload.get('action')=='lexical':
    sys.path.insert(0,str(__import__('pathlib').Path(__file__).resolve().parents[1]));from second_brain.research import lexical;result=lexical(payload['study'])
+  elif payload.get('action')=='test':result=hypothesis_test(payload)
   else:result=pdf(payload) if payload.get('action')=='pdf' else quantitative(payload)
   print(json.dumps(result,ensure_ascii=False,allow_nan=False))
  except Exception as e:print(json.dumps({'error':str(e)}));sys.exit(1)

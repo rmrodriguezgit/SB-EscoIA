@@ -38,9 +38,9 @@ class Handler(BaseHTTPRequestHandler):
                         data=record['markdown'].encode();self.send_response(200);self.send_header('Content-Type','text/markdown; charset=utf-8');self.send_header('Content-Disposition','attachment; filename="Peticion-'+rid+'.md"');self.send_header('Cache-Control','no-store');self.end_headers();self.wfile.write(data);return
                     return self.send(record)
                 if path=='/api/research':
-                    from .research import init,get
+                    from .research import init,get,visible
                     init(b);sid=parse_qs(url.query).get('id',[''])[0]
-                    return self.send(get(b,sid) if sid else b.rows('SELECT id,title,phase FROM research_studies ORDER BY created DESC'))
+                    return self.send(get(b,sid) if sid else visible(b))
                 if path=='/api/state':return self.send({'model':model_status(),'inference':__import__('second_brain.inference',fromlist=['status']).status(),'library':b.library(),'memories':b.rows('SELECT * FROM memories ORDER BY date DESC LIMIT 100'),'tasks':b.rows('SELECT * FROM tasks ORDER BY created DESC LIMIT 50'),'events':b.rows('SELECT * FROM events ORDER BY id DESC LIMIT 80'),'resources':__import__('second_brain.resources',fromlist=['snapshot']).snapshot(b.home),'csrf':self.server.token})
                 if path=='/api/export':
                     params=parse_qs(url.query);eid=params.get('id',[''])[0];fmt=params.get('format',[''])[0]

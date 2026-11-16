@@ -8,7 +8,7 @@ import "./style.css";
 import { useProfile, ProfileSwitcher, LoginScreen, SECTIONS_BY_ROLE, initials } from "./Perfil";
 import { openExplorer } from "./explorer";
 import { RequestRecord } from "./RequestRecord";
-import { ResearchDashboard } from "./ResearchDashboard";
+import { Investigaciones } from "./Investigaciones";
 import { VoiceInput } from "./VoiceInput";
 import { Cuerdas, type RequestEvent } from "./Cuerdas";
 import { Cerebro } from "./Cerebro";
@@ -258,7 +258,7 @@ function App() {
         <div className="content">
           {state && <Cerebro csrf={state.csrf} busy={busy||!!state.resources?.pipeline_busy} onRun={ui=>{setError("");if(ui.type==="abrir"){setSection(ui.text);return}setSection("Conversación");void send(ui.text)}}/>}
           <Cuerdas events={state?.events||[]} busy={busy} module={academicModules[section]?section:undefined} academic={academicEvent}/>
-          {section==="Investigaciones" && <ResearchDashboard post={post} onBusy={setBusy}/>}
+          {section==="Investigaciones" && <Investigaciones post={post} onBusy={setBusy}/>}
           {academicModules[section] && (
             <>
               <div className="module-heading">
