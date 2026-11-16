@@ -50,10 +50,17 @@ def _context(brain,question):
  try:rows=brain.search(question,limit=8)
  except Exception:return []
  out=[]
+ try:
+  # Capas persistentes de Memoria: preferencias pedagógicas del perfil y hechos fijados por la persona.
+  from . import memory_layers
+  ped=memory_layers.pedagogy_get(brain)
+  if ped.get('updated'):out.append({'citation':'Memoria pedagógica · '+ped['name'],'text':memory_layers.pedagogy_text(ped)[:700]})
+  out+=[{'citation':'Memoria · hecho fijado','text':t[:700]} for t in memory_layers.pinned_texts(brain,3)]
+ except Exception:pass
  for r in rows:
   if r['kind']=='memory' and r.get('source')=='conversación local':continue
   out.append({'citation':r['citation'],'text':(r['text'] or '')[:700]})
-  if len(out)==4:break
+  if len(out)==7:break
  return out
 
 def clean_actions(raw):

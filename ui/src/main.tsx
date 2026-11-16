@@ -9,6 +9,7 @@ import { useProfile, ProfileSwitcher, LoginScreen, SECTIONS_BY_ROLE, initials } 
 import { openExplorer } from "./explorer";
 import { RequestRecord } from "./RequestRecord";
 import { Investigaciones } from "./Investigaciones";
+import { Memoria } from "./Memoria";
 import { VoiceInput } from "./VoiceInput";
 import { Cuerdas, type RequestEvent } from "./Cuerdas";
 import { Cerebro } from "./Cerebro";
@@ -580,97 +581,7 @@ function App() {
               </div>
             </>
           )}
-          {section === "Memoria" && (
-            <>
-              <div className="page-heading">
-                <span className="eyebrow">CONTINUIDAD PERSONAL</span>
-                <h1>Lo importante permanece.</h1>
-                <p>
-                  Hechos, preferencias y decisiones con fecha y procedencia.
-                  Puedes corregirlos u olvidarlos.
-                </p>
-              </div>
-              <div className="memory-form">
-                <textarea
-                  placeholder="¿Qué quieres recordar?"
-                  aria-label="Nuevo recuerdo"
-                  value={memory}
-                  onChange={(e) => setMemory(e.target.value)}
-                />
-                <button disabled={!memory.trim()} onClick={saveMemory}>
-                  {edit ? "Guardar corrección" : "Guardar recuerdo"} →
-                </button>
-                {edit && (
-                  <button
-                    className="text-button"
-                    onClick={() => {
-                      setEdit(undefined);
-                      setMemory("");
-                    }}
-                  >
-                    Cancelar edición
-                  </button>
-                )}
-              </div>
-              <div className="memory-list">
-                {state?.memories.map((m) => (
-                  <article key={m.id}>
-                    <div className="memory-meta">
-                      ◇{" "}
-                      {m.type === "sessions"
-                        ? "Conversación"
-                        : m.type === "facts"
-                          ? "Hecho"
-                          : (
-                              {
-                                preferences: "Preferencia",
-                                projects: "Proyecto",
-                                decisions: "Decisión",
-                                daily: "Diario",
-                                inbox: "Entrada",
-                              } as Record<string, string>
-                            )[m.type] || m.type}{" "}
-                      <span>
-                        {new Date(m.date).toLocaleDateString("es-MX")} ·{" "}
-                        {m.status}
-                      </span>
-                    </div>
-                    <p>{m.text}</p>
-                    <div className="memory-actions">
-                      <button
-                        onClick={() => {
-                          setEdit(m.id);
-                          setMemory(m.text);
-                        }}
-                      >
-                        Corregir
-                      </button>
-                      <button
-                        onClick={async () => {
-                          if (
-                            confirm(
-                              "¿Olvidar este recuerdo y retirarlo de los índices?",
-                            )
-                          ) {
-                            await post("forget", { id: m.id });
-                            refresh();
-                          }
-                        }}
-                      >
-                        Olvidar
-                      </button>
-                    </div>
-                  </article>
-                ))}
-                {!state?.memories.length && (
-                  <p className="empty">
-                    Aún no hay recuerdos. Guarda el primero para recuperarlo en
-                    otra sesión.
-                  </p>
-                )}
-              </div>
-            </>
-          )}
+          {section === "Memoria" && <Memoria post={post} messages={messages} setMessages={setMessages} context={4096} />}
           {section === "Tareas" && (
             <>
               <div className="page-heading">

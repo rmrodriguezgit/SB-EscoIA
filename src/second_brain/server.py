@@ -69,9 +69,12 @@ class Handler(BaseHTTPRequestHandler):
         if not self.trusted() or self.headers.get('X-CSRF-Token')!=self.server.token or (origin and origin not in {f'http://127.0.0.1:{self.server.server_port}',f'http://localhost:{self.server.server_port}'}):return self.send({'error':'Solicitud no autorizada'},403)
         try:
             size=int(self.headers.get('Content-Length','0'))
-            if size>(3000000 if self.path=='/api/voice' else 500000 if self.path=='/api/research' else 50000):raise ValueError('Solicitud demasiado grande')
+            if size>(3000000 if self.path=='/api/voice' else 500000 if self.path in {'/api/research','/api/memory'} else 50000):raise ValueError('Solicitud demasiado grande')
             args=json.loads(self.rfile.read(size));b=Brain(self.server.home)
             try:
+                if self.path=='/api/memory':
+                    from . import memory_layers
+                    return self.send(memory_layers.dispatch(b,args))
                 if self.path=='/api/cerebro':
                     from . import cerebro
                     return self.send(cerebro.ask(b,args['question'],args.get('history')))
