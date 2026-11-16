@@ -17,6 +17,9 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith('/api/'):
             b=Brain(self.server.home)
             try:
+                if path=='/api/library/status':
+                    from .library_index import status
+                    return self.send(status(b))
                 if path=='/api/services':
                     from .services import academic_status
                     return self.send(academic_status())
@@ -72,6 +75,9 @@ class Handler(BaseHTTPRequestHandler):
             if size>(3000000 if self.path=='/api/voice' else 500000 if self.path in {'/api/research','/api/memory'} else 50000):raise ValueError('Solicitud demasiado grande')
             args=json.loads(self.rfile.read(size));b=Brain(self.server.home)
             try:
+                if self.path=='/api/library':
+                    from . import library_index
+                    return self.send(library_index.dispatch(b,args))
                 if self.path=='/api/memory':
                     from . import memory_layers
                     return self.send(memory_layers.dispatch(b,args))

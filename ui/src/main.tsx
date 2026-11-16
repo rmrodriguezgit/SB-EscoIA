@@ -10,6 +10,7 @@ import { openExplorer } from "./explorer";
 import { RequestRecord } from "./RequestRecord";
 import { Investigaciones } from "./Investigaciones";
 import { Memoria } from "./Memoria";
+import { BibliotecaIndex } from "./BibliotecaIndex";
 import { VoiceInput } from "./VoiceInput";
 import { Cuerdas, type RequestEvent } from "./Cuerdas";
 import { Cerebro } from "./Cerebro";
@@ -512,6 +513,7 @@ function App() {
                   Cada resultado conserva su documento y página.
                 </p>
               </div>
+              <BibliotecaIndex post={post} admin={isAdmin} />
               <div className="scope">
                 <span>Filtrar</span>
                 <select

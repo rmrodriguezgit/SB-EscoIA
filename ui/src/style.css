@@ -1134,3 +1134,24 @@ button.workspace:hover{border-color:#3a4c88}
 .memoria .memory-list article.pinned{border-color:#5eead4}
 .memoria .memory-list article.obsolete{opacity:.55}
 .memoria .memory-actions select{background:#070b18;border:1px solid #2f3f78;border-radius:8px;color:var(--ui-text);padding:4px 6px}
+
+/* ── Biblioteca: índice RAG ── */
+.lib-totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:0 0 14px}
+.lib-totals>div{background:#0e1630;border:1px solid #22305a;border-radius:12px;padding:10px 14px}
+.lib-totals b{display:block;font-size:20px;color:#5eead4}.lib-totals small{color:#9fb0dd}
+.lib-totals p{grid-column:1/-1;margin:0;font-size:12.5px}.lib-totals p.warn{color:#fbbf24}.lib-totals p.ok{color:#5eead4}
+.lib-totals button{grid-column:1/-1;justify-self:start}
+.lib-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.lib-index details{margin:6px 0}.lib-index summary{cursor:pointer;font-weight:600}.lib-index summary small{color:#9fb0dd;font-weight:400}
+.lib-table td small{display:block;color:#9fb0dd}.lib-table td{vertical-align:top}
+.lib-state{font-size:11px;border-radius:999px;padding:2px 8px;white-space:nowrap}.lib-state.ok{background:#10332f;color:#5eead4}.lib-state.lex{background:#2a2410;color:#fbbf24}
+.lib-actions{white-space:nowrap}
+.lib-hits blockquote{margin:8px 0;border-left:3px solid #60a5fa;padding:6px 12px;background:#121c3d;border-radius:0 8px 8px 0}
+.lib-hits blockquote p{margin:0 0 4px}.lib-hits cite{font-size:12px;color:#9fb0dd;font-style:normal}
+.lib-preview{position:fixed;right:16px;top:16px;bottom:16px;width:min(560px,calc(100vw - 32px));z-index:70;background:#0e1630;border:1px solid #2f3f78;border-radius:14px;overflow:auto;padding:14px 18px;box-shadow:0 20px 60px #000b}
+.lib-preview header{display:flex;gap:10px;align-items:center;flex-wrap:wrap;position:sticky;top:-14px;background:#0e1630;padding:6px 0}
+.lib-preview header span{color:#9fb0dd;font-size:12px}.lib-preview header button{margin-left:auto}
+.lib-preview article{border-top:1px solid #1a2550;padding:8px 0}.lib-preview article small{color:#5eead4}
+.edit-dialog{position:fixed;right:16px;bottom:16px;z-index:70;max-width:380px;background:#0e1630;border:1px solid #5eead4;border-radius:12px;padding:14px;display:grid;gap:8px;box-shadow:0 20px 50px #000a}
+.edit-dialog label{display:grid;gap:4px;font-size:12px;color:#9fb0dd}
+.edit-dialog input,.edit-dialog select{background:#070b18;border:1px solid #2f3f78;border-radius:8px;color:var(--ui-text);padding:6px 8px}
