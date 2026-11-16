@@ -10,6 +10,7 @@ import { RequestRecord } from "./RequestRecord";
 import { ResearchDashboard } from "./ResearchDashboard";
 import { VoiceInput } from "./VoiceInput";
 import { Cuerdas, type RequestEvent } from "./Cuerdas";
+import { Cerebro } from "./Cerebro";
 import { ResponseActions, type Artifact } from "./ResponseActions";
 type Document = { id: string; name: string; pages: number };
 type Career = { code: string; name: string; documents: Document[] };
@@ -247,6 +248,7 @@ function App() {
           </div>
         </header>
         <div className="content">
+          {state && <Cerebro csrf={state.csrf} busy={busy||!!state.resources?.pipeline_busy} onRun={ui=>{setError("");if(ui.type==="abrir"){setSection(ui.text);return}setSection("Conversación");void send(ui.text)}}/>}
           <Cuerdas events={state?.events||[]} busy={busy} module={academicModules[section]?section:undefined} academic={academicEvent}/>
           {section==="Encuestas" && <ResearchDashboard post={post} onBusy={setBusy}/>}
           {academicModules[section] && (

@@ -980,3 +980,52 @@ a:focus-visible {
 .resource-panel select{max-width:100%;width:100%;box-sizing:border-box}
 .cs-tip{position:absolute;z-index:2;pointer-events:none;width:250px;background:#0b1226f2;border:1px solid #334a85;border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:3px;color:#e6ecff;font-size:11.5px;box-shadow:0 8px 24px #0008}
 .cs-tip b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cs-tip span{color:#8b9bc7}.cs-tip i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+/* Cerebro flotante (abajo a la derecha), lenguaje visual de Cuerdas en vivo */
+.cerebro-launcher,.cerebro-panel{--cb-bg:#070b18;--cb-card:#0e1630;--cb-line:#22305a;--cb-muted:#8b9bc7;--cb-text:#e6ecff;position:fixed;right:20px;bottom:20px;z-index:150;color:var(--cb-text);font-size:12.5px}
+.cerebro-launcher{display:flex;align-items:center;gap:8px;padding:8px 16px 8px 8px;border-radius:999px;border:1px solid #2a3a6e;background:radial-gradient(120% 160% at 0% 0%,#18244d,#070b18 70%);box-shadow:0 10px 30px #04060e66,0 0 0 1px #60a5fa22 inset;cursor:pointer;font-weight:600;letter-spacing:.02em}
+.cerebro-launcher:hover{border-color:#60a5fa88;box-shadow:0 10px 34px #04060e88,0 0 18px #60a5fa33}
+.cerebro-launcher b{background:#c4b5fd;color:#0b1329;border-radius:999px;min-width:18px;height:18px;display:inline-grid;place-items:center;font-size:11px}
+.cerebro-wave{display:block;width:100%;height:46px}
+.cerebro-wave.small{width:54px;height:26px}
+.cerebro-panel{width:min(420px,calc(100vw - 24px));height:min(620px,calc(100vh - 40px));display:flex;flex-direction:column;border-radius:18px;border:1px solid var(--cb-line);background:linear-gradient(180deg,#0c1430 0%,var(--cb-bg) 38%);box-shadow:0 24px 70px #04060eaa;overflow:hidden}
+.cerebro-panel header{display:flex;align-items:center;gap:8px;padding:12px 12px 0 16px}
+.cerebro-title{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.cerebro-title strong{font-size:14px;letter-spacing:.04em}
+.cerebro-title small,.cerebro-meta{color:var(--cb-muted);font-size:11px}
+.cerebro-icon{background:#ffffff0d;border:1px solid #ffffff1f;color:var(--cb-text);border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:13px}
+.cerebro-icon.on{border-color:#5eead488;background:#5eead41a}
+.cerebro-log{flex:1;min-height:0;overflow:auto;padding:4px 14px 12px;display:flex;flex-direction:column;gap:10px}
+.cerebro-empty p{color:var(--cb-muted);line-height:1.55;margin:4px 0 10px}
+.cerebro-empty strong{color:var(--cb-text)}
+.cerebro-empty button{display:block;width:100%;text-align:left;margin-top:6px;background:#ffffff08;border:1px solid var(--cb-line);color:#c9d4f5;border-radius:10px;padding:8px 10px;cursor:pointer;font-size:12px}
+.cerebro-empty button:hover{border-color:#60a5fa88}
+.cerebro-turn{max-width:92%;line-height:1.5}
+.cerebro-turn p{margin:0;white-space:pre-wrap}
+.cerebro-turn.cb-user{align-self:flex-end;background:#1d2b5c;border:1px solid #2f3f78;border-radius:14px 14px 4px 14px;padding:8px 11px}
+.cerebro-turn.cb-assistant{align-self:flex-start;background:var(--cb-card);border:1px solid var(--cb-line);border-radius:14px 14px 14px 4px;padding:9px 12px;display:flex;flex-direction:column;gap:8px}
+.cerebro-turn.error{border-color:#f8717188;color:#fecaca}
+.cerebro-turn.thinking{color:#fbbf24;font-style:italic}
+.cerebro-action{border:1px solid #2a3a6e;border-left:3px solid #c4b5fd;border-radius:10px;padding:8px 10px;background:#0a1124}
+.cerebro-action.aceptada{border-left-color:#5eead4;opacity:.85}
+.cerebro-action.descartada{border-left-color:#64748b;opacity:.6}
+.cerebro-action-head{display:flex;align-items:center;gap:6px}
+.cerebro-action-head strong{flex:1;font-size:12.5px}
+.cerebro-action-head em{font-style:normal;font-size:10.5px;color:var(--cb-muted);border:1px solid var(--cb-line);border-radius:999px;padding:1px 7px}
+.cerebro-action p{margin:6px 0 0;color:#c9d4f5;font-size:12px}
+.cerebro-action blockquote{margin:6px 0 0;padding:6px 8px;border-radius:6px;background:#ffffff08;color:#e6ecff;font-size:11.5px;max-height:90px;overflow:auto}
+.cerebro-buttons{display:flex;gap:6px;margin-top:8px}
+.cerebro-buttons button{border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;border:1px solid #ffffff26;background:#ffffff0d;color:var(--cb-text)}
+.cerebro-buttons button.accept{background:#5eead4;border-color:#5eead4;color:#04201b;font-weight:600}
+.cerebro-buttons button:disabled{opacity:.5;cursor:not-allowed}
+.cerebro-status{display:block;margin-top:6px;color:#5eead4;font-size:11px}
+.cerebro-status.error{color:#fca5a5}
+.cerebro-input{display:flex;align-items:flex-end;gap:6px;padding:10px 12px 12px;border-top:1px solid var(--cb-line);background:#060a16}
+.cerebro-input textarea{flex:1;resize:none;background:#0e1630;border:1px solid var(--cb-line);border-radius:12px;color:var(--cb-text);padding:8px 10px;font:inherit;outline:none}
+.cerebro-input textarea:focus{border-color:#60a5fa}
+.cerebro-input>button,.cerebro-input .voice-button.compact{flex:none;width:36px;min-width:36px;height:36px;border-radius:50%;border:1px solid #2a3a6e;background:#ffffff0d;color:var(--cb-text);cursor:pointer;font-size:15px;padding:0;margin:0}
+.cerebro-input>button[type=submit]{background:#60a5fa;border-color:#60a5fa;color:#04122b;font-weight:700}
+.cerebro-input>button:disabled{opacity:.45;cursor:not-allowed}
+.cerebro-input .voice-button.compact.recording{background:#5eead4;color:#04201b;box-shadow:0 0 14px #5eead499}
+@media (max-width:520px){.cerebro-launcher,.cerebro-panel{right:12px;bottom:12px}}
+.cerebro-input .voice-button.compact{width:36px!important;height:36px!important;padding:0!important;font-size:15px!important;background:#ffffff0d!important;color:#e6ecff!important}
+.cerebro-input .voice-button.compact.recording{background:#5eead4!important;color:#04201b!important}

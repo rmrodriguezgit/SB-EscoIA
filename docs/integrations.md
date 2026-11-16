@@ -3,6 +3,7 @@
 | Componente | Estado | Condición para avanzar |
 |---|---|---|
 | SQLite FTS5, memoria, biblioteca PDF | Verificado | Funciona sin internet |
+| Cerebro flotante (cualquier consulta, acciones al aceptar) | Verificado con LLMLX qwen3.5:4b; voz con micrófono configurada sin probar | Ver docs/cerebro.md |
 | React 19 español y API local | Verificado | Compilación y navegación local |
 | Qwen/Ollama | Adaptador implementado; prueba de generación pendiente de recursos | Modelo pequeño y presupuesto de RAM |
 | Embeddings bge-m3 / RRF | Configurado sin probar con pesos | `ollama pull bge-m3`, luego `brain sync --embeddings` |

@@ -90,6 +90,12 @@ class Handler(BaseHTTPRequestHandler):
                     if action in {'delete','restore'}:return self.send(request_git.archive(b,rid,args['head'],action=='delete'))
                     if action=='forget':return self.send(request_git.remove(b,rid,args['head'],args['confirmation']))
                     raise ValueError('Operación Git inválida')
+                if self.path=='/api/cerebro':
+                    from . import cerebro
+                    return self.send(cerebro.ask(b,args['question'],args.get('history')))
+                if self.path=='/api/cerebro/decision':
+                    from . import cerebro
+                    return self.send(cerebro.decide(b,args['id'],args['index'],args['decision']))
                 if self.path=='/api/attendance/decision':
                     from . import attendance_commands
                     return self.send(attendance_commands.decide(b,args['id'],args['decision']))

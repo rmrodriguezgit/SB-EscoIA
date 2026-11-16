@@ -10,7 +10,11 @@ export function VoiceInput({
   transcribe,
   onText,
   onError,
+  compact = false,
+  onRecording,
 }: {
+  compact?: boolean;
+  onRecording?: (recording: boolean) => void;
   transcribe: (pcm: string) => Promise<{ text: string }>;
   onText: (text: string) => void;
   onError: (text: string) => void;
@@ -18,6 +22,7 @@ export function VoiceInput({
   const capture = useRef<Capture | null>(null);
   const [recording, setRecording] = useState(false);
   const [processing, setProcessing] = useState(false);
+  useEffect(() => onRecording?.(recording), [recording]);
   async function stop() {
     const c = capture.current;
     if (!c) return;
@@ -95,11 +100,13 @@ export function VoiceInput({
   return (
     <button
       type="button"
-      className={"voice-button " + (recording ? "recording" : "")}
+      className={"voice-button " + (recording ? "recording" : "") + (compact ? " compact" : "")}
       disabled={processing}
+      aria-label={compact ? (processing ? "Transcribiendo" : recording ? "Terminar grabación" : "Hablar") : undefined}
+      title={compact ? (recording ? "Terminar y enviar" : "Hablar (audio local)") : undefined}
       onClick={() => (recording ? stop() : start())}
     >
-      {processing
+      {compact ? (processing ? "…" : recording ? "■" : "🎙") : processing
         ? "Transcribiendo…"
         : recording
           ? "■ Terminar grabación"
