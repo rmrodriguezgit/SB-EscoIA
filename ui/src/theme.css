@@ -150,3 +150,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* Incrustado en EscoIA con ?theme=dark: botones con el acento de Cuerdas y fondo transparente */
+:root[data-theme="dark"] .embedded button:not(.secondary){background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+:root[data-theme="dark"] .layout.embedded{background:transparent}
