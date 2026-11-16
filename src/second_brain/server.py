@@ -157,6 +157,10 @@ def serve(home,port=8790):
             finally:b.close()
     t=threading.Thread(target=worker,daemon=True);t.start()
     print(f'EscoIA: http://127.0.0.1:{port}',flush=True)
+    # SIGTERM (app de escritorio, Reiniciar) cierra igual que Ctrl+C: se ejecuta el finally.
+    import signal
+    def terminate(*_):raise KeyboardInterrupt
+    signal.signal(signal.SIGTERM,terminate)
     try:server.serve_forever()
     except KeyboardInterrupt:pass
     finally:stop.set();server.server_close()

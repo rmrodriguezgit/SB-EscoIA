@@ -1,0 +1,14 @@
+{
+  "name": "escoia-desktop",
+  "private": true,
+  "version": "0.1.0",
+  "description": "App de escritorio de EscoIA (Electron): lanza el coordinador y, al salir, descarga los modelos y cierra sus procesos",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "verify": "bash verify-exit.sh"
+  },
+  "devDependencies": {
+    "electron": "44.9.3"
+  }
+}

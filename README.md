@@ -133,6 +133,16 @@ Módulo integrado en Encuestas: [uso, arquitectura y límites](docs/mixed-resear
 
 Qwen3.5 0.8B mediante Uzu ARM64 está integrado como opción experimental junto a Ollama. Remoto sigue siendo predeterminado. Preparación, límites y estado de validación: [docs/uzu.md](docs/uzu.md).
 
+### App de escritorio (Electron)
+
+Abre `Abrir-EscoIA.command` con doble clic o ejecuta `./escoia-desktop.sh`. La primera vez instala Electron en
+`desktop/node_modules` y compila la interfaz si cambió. La app lanza el coordinador (8790) y el módulo académico
+(8787) si no estaban activos, y muestra EscoIA en su propia ventana. Al salir (cerrar la ventana, Cmd+Q o Ctrl+C)
+pide a EscoIA descargar su modelo local, termina el coordinador con sus procesos de Uzu y LAYA y detiene el módulo
+académico solo si lo inició ella. Si EscoIA ya estaba en ejecución, la app usa esa copia y al salir solo descarga
+los modelos. Con una petición en curso, pide confirmación antes de salir.
+Comprobación: `bash desktop/verify-exit.sh close` o `bash desktop/verify-exit.sh signal`.
+
 ### Arranque con doble clic en macOS
 
 Abre `Arrancar-EscoIA.command` desde esta carpeta. Comprueba memoria y presión,

@@ -27,3 +27,6 @@ ui/dist/
 
 # Sistema
 .DS_Store
+
+# App de escritorio
+desktop/node_modules/
