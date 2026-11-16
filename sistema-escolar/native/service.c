@@ -53,6 +53,7 @@ static const operation operations[]={
  {"teacher_accounts","SELECT id,name,user_id FROM teachers ORDER BY name",0},
  {"teacher_link","UPDATE teachers SET user_id=? WHERE id=? AND user_id IS NULL",1},
  {"user_pin","UPDATE users SET password_hash=? WHERE id=?",1},
+ {"attendance_record","INSERT INTO attendance(session_id,student_id,status,recorded_at,actor_id,confidence) VALUES(?,?,?,?,?,?)",1},
  {"attendance_set","INSERT INTO attendance(session_id,student_id,status,recorded_at,actor_id,note) VALUES(?,?,?,?,?,?) ON CONFLICT(session_id,student_id) DO UPDATE SET status=excluded.status,recorded_at=excluded.recorded_at,actor_id=excluded.actor_id,note=excluded.note",1},
  {"attendance_history","SELECT s.id AS session_id,s.starts,s.ends,s.cancelled,e.student_id,st.number,st.name,a.status,a.note,a.confidence FROM schedules s JOIN enrollments e ON e.offering_id=s.offering_id JOIN students st ON st.id=e.student_id LEFT JOIN attendance a ON a.session_id=s.id AND a.student_id=e.student_id WHERE s.offering_id=? ORDER BY s.starts,st.name",0},
  {"enrolled","SELECT s.id,s.name,b.model,b.encrypted_embedding,b.dimensions,b.expires_at FROM students s JOIN enrollments e ON e.student_id=s.id JOIN schedules sc ON sc.offering_id=e.offering_id LEFT JOIN biometrics b ON b.student_id=s.id WHERE sc.id=?",0},

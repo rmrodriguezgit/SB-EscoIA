@@ -30,6 +30,8 @@ export const config = {
   recognizer: resolve(root, process.env.FACE_MODEL ?? "models/w600k_mbf.onnx"),
   faceThreshold: Number(process.env.FACE_THRESHOLD ?? 0.55),
   faceMargin: Number(process.env.FACE_MARGIN ?? 0.08),
+  /** Minutos de tolerancia tras el inicio de clase; después, el reconocimiento facial registra «Retardo». */
+  lateToleranceMin: Number(process.env.LATE_TOLERANCE_MIN ?? 10),
   allowWeb: process.env.ALLOW_WEB_REFERENCES === "true",
 };
 for (const url of [config.laya, config.ollama]) {

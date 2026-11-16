@@ -26,7 +26,7 @@ export function FacialAttendance({ admin }: { admin: boolean }) {
   const [classContext, setClassContext] = useState<Row | null>(null);
   const [search, setSearch] = useState("");
   const [lastRegistered, setLastRegistered] = useState("");
-  const [lastRecognition,setLastRecognition] = useState<{name:string;number:string;at:number;duplicate:boolean}|null>(null);
+  const [lastRecognition,setLastRecognition] = useState<{name:string;number:string;at:number;duplicate:boolean;status?:string;confidence?:number}|null>(null);
   const [clock, setClock] = useState(Date.now());
   const [notice, setNotice] = useState<{kind:"success"|"warning"|"error"|"working"|"ready";title:string;detail:string} | null>(null);
   const [refreshRevision, setRefreshRevision] = useState(0);
@@ -72,9 +72,10 @@ export function FacialAttendance({ admin }: { admin: boolean }) {
       ? {kind:"success" as const,title:"Registro inicial completado",detail:`${display}. Biometría guardada en su matrícula${result.attendanceRegistered ? " y asistencia acreditada en esta clase" : ""}.`}
       : payload.action === "delete"
       ? {kind:"ready" as const,title:"Registro facial eliminado",detail:display}
-      : {kind:"success" as const,title:result.status === "present" ? "Asistencia registrada" : "Registro manual guardado",detail:`${display}. ${payload.action === "verify" ? "Alumno con biometría ya registrada: rostro reconocido y asistencia guardada en el sistema." : "El sistema confirmó el registro solicitado."}`};
+      : {kind:"success" as const,title:result.status === "present" ? `Presente${typeof result.confidence === "number" ? ` · confianza ${Math.round(result.confidence*100)}%` : ""}` : result.status === "late" ? `Retardo${typeof result.confidence === "number" ? ` · confianza ${Math.round(result.confidence*100)}%` : ""}` : "Registro manual guardado",detail:`${display}. ${payload.action === "verify" ? "Alumno con biometría ya registrada: rostro reconocido y asistencia guardada en el sistema." : "El sistema confirmó el registro solicitado."}`};
     setNotice(nextNotice);
-    if(payload.action === "verify" && identity) setLastRecognition({...identity,at:Date.now(),duplicate:!!result.alreadyRecorded});
+    if(payload.action === "verify" && identity) setLastRecognition({...identity,at:Date.now(),duplicate:!!result.alreadyRecorded,status:result.status,confidence:result.confidence});
+    if(payload.action === "verify" && !result.alreadyRecorded) chime(result.status === "late" ? 440 : 880);
     if (!result.alreadyRegistered) {
       setRefreshRevision(value => value + 1);
       
@@ -232,7 +233,7 @@ export function FacialAttendance({ admin }: { admin: boolean }) {
             </> : <>
               <h3>Identificación sin selección previa</h3><p>La cámara busca al alumno entre los inscritos en este grupo. No importa el orden de llegada.</p>
               <p className="muted">Detección automática: el alumno solo se coloca frente a la cámara unos instantes. No necesita pulsar botones, girar la cabeza ni seguir pasos. Espera el aviso antes de salir del área de la cámara.</p>
-              {lastRecognition && <div className="capture-identity"><small>ÚLTIMO ALUMNO RECONOCIDO · {new Date(lastRecognition.at).toLocaleTimeString("es-MX")}</small><strong>{lastRecognition.name}</strong><span>Matrícula {lastRecognition.number} · {lastRecognition.duplicate ? "Ya tenía asistencia; no se duplicó" : "Asistencia guardada"}</span></div>}
+              {lastRecognition && <div className="capture-identity"><small>ÚLTIMO ALUMNO RECONOCIDO · {new Date(lastRecognition.at).toLocaleTimeString("es-MX")}</small><strong>{lastRecognition.name}</strong><span>Matrícula {lastRecognition.number} · {lastRecognition.duplicate ? "Ya tenía asistencia; no se duplicó" : lastRecognition.status === "late" ? "Retardo registrado" : "Presente"}{typeof lastRecognition.confidence === "number" ? ` · confianza ${Math.round(lastRecognition.confidence*100)}%` : ""}</span></div>}
               <div className="passive-indicator" role="status"><span className={active&&supervised&&!autoPaused?"passive-dot active":"passive-dot"}/>{!supervised?"Activa la supervisión docente para iniciar":autoPaused?"Reconocimiento pausado":active?"Reconocimiento automático activo":"Esperando cámara"}</div>
               <button className="secondary" disabled={!active||!supervised} onClick={()=>setAutoPaused(value=>!value)}>{autoPaused?"Reanudar reconocimiento":"Pausar nuevas capturas"}</button>
               <small>La confirmación usa varias imágenes automáticas y una sola identidad del grupo. No sustituye la supervisión ni constituye una prueba de vida.</small>
@@ -244,4 +245,13 @@ export function FacialAttendance({ admin }: { admin: boolean }) {
       </dialog>
     </section>
   );
+}
+
+/** Confirmación auditiva breve (tono agudo = presente, grave = retardo). Sin audio disponible no hace nada. */
+function chime(freq: number) {
+  try {
+    const ctx = new AudioContext(), osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.frequency.value = freq; gain.gain.setValueAtTime(0.12, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+    osc.connect(gain).connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.26); osc.onended = () => void ctx.close();
+  } catch { /* sin audio */ }
 }
