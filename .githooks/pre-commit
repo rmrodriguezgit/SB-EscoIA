@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Repositorio PÚBLICO: bloquea datos privados, pesos, secretos y datos personales antes de que lleguen a GitHub.
+set -euo pipefail
+blocked=$(git diff --cached --name-only --diff-filter=ACM | grep -E '(^|/)(data|memory|logs)/|\.sqlite|\.db$|(^|/)\.env(\..*)?$|\.safetensors$|\.gguf$|\.npz$|\.pid$' | grep -v -E '\.env\.example$' || true)
+if [[ -n "$blocked" ]]; then
+  echo "pre-commit: archivos privados o pesos en el commit:" >&2; echo "$blocked" >&2; exit 1
+fi
+added=$(git diff --cached -U0 --diff-filter=ACM -- . ':(exclude).githooks' | grep -E '^\+' | grep -v -E '^\+\+\+' || true)
+if grep -q -E '(sk-[A-Za-z0-9_-]{20,}|gh[pousr]_[A-Za-z0-9]{30,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY|QUANT_AI_API_TOKEN=[^ ]+)' <<<"$added"; then
+  echo "pre-commit: posible secreto en el diff; revisa antes de commitear" >&2; exit 1
+fi
+# Correos reales (se permiten noreply y dominios de ejemplo) y rutas con el usuario de macOS.
+emails=$(grep -o -E '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' <<<"$added" | grep -v -i -E 'noreply|no-reply|@example\.(com|org)|@users\.noreply\.github\.com' || true)
+if [[ -n "$emails" ]]; then
+  echo "pre-commit: correo en el diff (repo público):" >&2; sort -u <<<"$emails" >&2; exit 1
+fi
+if grep -q -E '/Users/[A-Za-z0-9._-]+/' <<<"$added"; then
+  echo "pre-commit: ruta absoluta con usuario de macOS en el diff (repo público); usa rutas relativas" >&2; exit 1
+fi

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Push automático tras cada commit (rama actual → origin). Desactivar: git config escoia.autopush false
+[[ "$(git config --bool escoia.autopush 2>/dev/null)" == "false" ]] && exit 0
+git remote get-url origin >/dev/null 2>&1 || exit 0
+branch=$(git symbolic-ref --short HEAD 2>/dev/null) || exit 0
+log="$(git rev-parse --git-dir)/autopush.log"
+if git push -q -u origin "$branch" >>"$log" 2>&1; then
+  echo "autopush: $branch → origin ✓"
+else
+  echo "autopush: falló el push (ver $log)" >&2
+fi
+exit 0
