@@ -904,3 +904,5 @@ a:focus-visible {
 .document-review.approved { color:#22603b; background:#edf8f0; border-color:#bcdcc6; }
 .document-review.rejected { color:#973c37; background:#fff1ef; border-color:#e6beb9; }
 .document-review.outdated { color:#8a6124; background:#fff8e9; border-color:#e6d2a4; }
+
+.pending-operation{margin:12px 0;padding:12px 14px;border:1px solid #e3b4ad;background:#fdf3f1;border-radius:10px;font-size:13px}.pending-operation p{margin:6px 0 10px}.pending-operation div{display:flex;gap:8px;flex-wrap:wrap}.pending-operation button{padding:7px 12px;border-radius:7px;border:1px solid #d5deeb;background:white;cursor:pointer}.pending-operation button.danger{background:#b3402f;border-color:#b3402f;color:white}.pending-operation button:disabled{opacity:.5;cursor:default}.pending-operation small{display:block;margin-top:8px}

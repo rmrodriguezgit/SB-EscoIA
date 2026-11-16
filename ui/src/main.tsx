@@ -1,4 +1,5 @@
 import { RELEASE } from "./release";
+import {PendingOperation} from './PendingOperation';
 import {AcademicConnection} from "./AcademicConnection";
 import {AcademicAnswer} from './AcademicAnswer';
 import React, { useState, useEffect } from "react";
@@ -43,6 +44,7 @@ type Message = {
   sources?: Source[];
   mode?: string;
   artifacts?: Artifact[];
+  pending_operation?: { id: string; summary: string };
 };
 type Resources={provider?:string;model?:string;llmlx?:{connected:boolean;reason?:string;engine?:string;default_model?:string;breaker_open?:boolean;available_gib?:number;threshold_gib?:number;total_gib?:number;pressure?:string};memory:{used_gib?:number;limit_gib:number;pressure?:string;error?:string;headroom_gib?:number;reserve_gib?:number;shortfall_gib?:number;can_load?:boolean};qwen:{status:string;resident:{name:string;size_gib:number}[]};laya:{status:string};pipeline_busy:boolean;cpu_threads:number;pdf_workers:number};
 type State = {
@@ -397,6 +399,7 @@ function App() {
                       </div>
                       {m.role==="assistant" && <ResponseActions text={m.text} artifacts={m.artifacts}/>}
                       <AcademicAnswer text={m.text}/>
+                      {m.pending_operation && state && <PendingOperation id={m.pending_operation.id} summary={m.pending_operation.summary} csrf={state.csrf}/>}
                       {m.request_record && state && <RequestRecord id={m.request_record.id} csrf={state.csrf} verification={m.request_record.verification} initialOpen/>}
                       {m.validation && (
                         <p className="validation-label">

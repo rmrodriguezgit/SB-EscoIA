@@ -9,6 +9,7 @@
 | Grafo SQLite | Verificado, relaciones documentales | No equivale a extracción semántica |
 | LLMLX (LocalLLM.app, gateway :11500) | **Único motor de conversación.** Verificado 2026-11-15: generación con `qwen3.5:4b` (6,3 s; cadena completa 9,6 s) y descarga tras la respuesta. `qwen3:8b` rechazado por el breaker de LLMLX (429) con 3 GiB libres | La RAM del modelo la protege el breaker de LLMLX (pausa < 1,8 GiB libres), no el presupuesto de 12,5 GiB. LAYA, PDF y voz conservan el presupuesto de EscoIA |
 | Laya multilingual MLX | Adaptador opcional, sin probar | Runtime dedicado y evaluación española |
+| MCP `escoia` (stdio) | Verificado 2026-11-15: 6 herramientas, petición por MCP respondida por el coordinador con expediente. Registrado en Claude Code (conectado) y en Claude Desktop (sin comprobar hasta reiniciar). Órdenes administrativas solo como propuesta confirmada en la interfaz | Agente con herramientas pendiente; ver docs/mcp.md |
 | Codex app-server | Handshake stdio verificado | No se inició un turno ni se transfirió tarea externa |
 | Workspace CLI | Adaptador de lectura preparado | Instalar versión seleccionada, OAuth del usuario, BRAIN_WORKSPACE_READ=1 |
 | Voz whisper.cpp | Puente C probado en proyecto académico; CLI de archivos preparada | WHISPER_BIN, WHISPER_MODEL; float32 mono 16kHz, máximo 30 segundos |

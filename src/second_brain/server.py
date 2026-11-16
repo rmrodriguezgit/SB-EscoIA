@@ -87,6 +87,9 @@ class Handler(BaseHTTPRequestHandler):
                     if action in {'delete','restore'}:return self.send(request_git.archive(b,rid,args['head'],action=='delete'))
                     if action=='forget':return self.send(request_git.remove(b,rid,args['head'],args['confirmation']))
                     raise ValueError('Operación Git inválida')
+                if self.path=='/api/attendance/decision':
+                    from . import attendance_commands
+                    return self.send(attendance_commands.decide(b,args['id'],args['decision']))
                 if self.path=='/api/services/reconnect':
                     from .services import recover_academic
                     return self.send(recover_academic(self.server.home))
