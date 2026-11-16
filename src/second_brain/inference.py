@@ -58,12 +58,17 @@ def ensure_ollama():
     time.sleep(.15)
   raise RuntimeError('Ollama local no pudo iniciarse; revisa data/ollama.log')
 
-LOCAL_MODELS=['uzu:qwen3.5:0.8b:4bit','qwen2.5:1.5b-instruct-q4_K_M','qwen2.5:3b-instruct-q4_K_M']
+LOCAL_MODELS=['uzu:qwen3.5:0.8b:4bit','qwen2.5:1.5b-instruct-q4_K_M','qwen2.5:3b-instruct-q4_K_M','llmlx:qwen3.5:4b','llmlx:qwen3:8b']
 def select_model(model):
  if model not in LOCAL_MODELS:raise ValueError('Modelo local no permitido')
  if model.startswith('uzu:'):
   from .uzu_local import available
   if not available():raise ValueError('Uzu requiere completar scripts/preparar-uzu.sh; consulta docs/uzu.md')
+ if model.startswith('llmlx:'):
+  from . import llmlx_local
+  try:installed={m['name'] for m in llmlx_local.request('/api/tags',timeout=3).get('models',[])}
+  except RuntimeError as e:raise ValueError(str(e)) from None
+  if model not in installed:raise ValueError('LLMLX aún no tiene '+llmlx_local.engine_name(model)+' instalado; espera a que LocalLLM termine la descarga')
  from . import runtime,resources
  if not runtime.PIPELINE_LOCK.acquire(blocking=False):raise ValueError('Espera a que termine la petición activa')
  try:

@@ -7,6 +7,7 @@
 | Qwen/Ollama | Adaptador implementado; prueba de generación pendiente de recursos | Modelo pequeño y presupuesto de RAM |
 | Embeddings bge-m3 / RRF | Configurado sin probar con pesos | `ollama pull bge-m3`, luego `brain sync --embeddings` |
 | Grafo SQLite | Verificado, relaciones documentales | No equivale a extracción semántica |
+| LLMLX (LocalLLM.app, gateway :11500) | Adaptador `llmlx_local` implementado; conexión verificada (`/health`, `/api/tags`) 2026-11-15; generación sin probar: bloqueada por el presupuesto de 12,5 GiB (9,95 GiB en uso + 4,5 GiB de reserva) | Liberar memoria y elegir `LLMLX · Qwen3.5 4B` en el selector; `qwen3:8b` cuando LocalLLM termine la descarga |
 | Laya multilingual MLX | Adaptador opcional, sin probar | Runtime dedicado y evaluación española |
 | Codex app-server | Handshake stdio verificado | No se inició un turno ni se transfirió tarea externa |
 | Workspace CLI | Adaptador de lectura preparado | Instalar versión seleccionada, OAuth del usuario, BRAIN_WORKSPACE_READ=1 |
@@ -31,3 +32,5 @@ GWS requiere proyecto Google Cloud y OAuth. No se solicitan contraseñas ni se e
 Codex: initialize → initialized por stdio, probado con CLI 0.160.0. La evidencia está en `codex-handshake.json`. La integración de turnos, aprobación y bus persistente externo está pendiente. [Protocolo oficial](https://learn.chatgpt.com/docs/app-server).
 
 Claude-Claw es ambiguo: se examinó específicamente andrehuang/claude-claw, una colección de mejoras para Claude Code. No se considera sinónimo de OpenClaw ni se activa por nombre. [Proyecto examinado](https://github.com/andrehuang/claude-claw).
+
+LLMLX ([repositorio](https://github.com/rmrodriguezgit/LLMLX)) es la app de barra de menú LocalLLM: gateway SwiftNIO sobre su propio Ollama (127.0.0.1:11501) con breaker de RAM, cola de prioridad y telemetría. EscoIA usa su API nativa Ollama en `127.0.0.1:11500` (`LLMLX_HOST` solo admite localhost), con `X-Client-App: escoia`, `X-Priority: high`, `think:false` y `keep_alive:0`. No inicia, configura ni actualiza la app. Los embeddings siguen en el Ollama de EscoIA (11434). Un 429 de LLMLX (poca RAM o cola llena) se muestra como error; no se reintenta en silencio.
