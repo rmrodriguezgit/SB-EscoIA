@@ -100,6 +100,10 @@ class Handler(BaseHTTPRequestHandler):
                 if self.path=='/api/services/reconnect':
                     from .services import recover_academic
                     return self.send(recover_academic(self.server.home))
+                if self.path=='/api/llmlx/activate':
+                    from . import llmlx_local,resources
+                    out=llmlx_local.activate(bool(args.get('enabled')));resources._stamp=0
+                    return self.send(out)
                 if self.path=='/api/inference':
                     from .inference import select,select_model
                     return self.send(select_model(args['model']) if 'model' in args else select(args['mode']))

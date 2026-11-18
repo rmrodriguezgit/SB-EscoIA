@@ -51,7 +51,7 @@ type Message = {
   artifacts?: Artifact[];
   pending_operation?: { id: string; summary: string };
 };
-type Resources={provider?:string;model?:string;llmlx?:{connected:boolean;reason?:string;engine?:string;default_model?:string;breaker_open?:boolean;available_gib?:number;threshold_gib?:number;total_gib?:number;pressure?:string};memory:{used_gib?:number;limit_gib:number;pressure?:string;error?:string;headroom_gib?:number;reserve_gib?:number;shortfall_gib?:number;can_load?:boolean};qwen:{status:string;resident:{name:string;size_gib:number}[]};laya:{status:string};pipeline_busy:boolean;cpu_threads:number;pdf_workers:number};
+type Resources={provider?:string;model?:string;llmlx?:{enabled?:boolean;connected:boolean;reason?:string;engine?:string;default_model?:string;breaker_open?:boolean;available_gib?:number;threshold_gib?:number;total_gib?:number;pressure?:string};memory:{used_gib?:number;limit_gib:number;pressure?:string;error?:string;headroom_gib?:number;reserve_gib?:number;shortfall_gib?:number;can_load?:boolean};qwen:{status:string;resident:{name:string;size_gib:number}[]};laya:{status:string};pipeline_busy:boolean;cpu_threads:number;pdf_workers:number};
 type State = {
   resources?: Resources;
   csrf: string;
@@ -82,7 +82,7 @@ function App() {
     [input, setInput] = useState(""),
     [messages, setMessages] = useState<Message[]>([]),
     [busy, setBusy] = useState(false),
-    [releasing,setReleasing]=useState(false),[resourceNote,setResourceNote]=useState(""),
+    [releasing,setReleasing]=useState(false),[toggling,setToggling]=useState(false),[resourceNote,setResourceNote]=useState(""),
     [error, setError] = useState(""),
     [memory, setMemory] = useState(""),
     [edit, setEdit] = useState<string | undefined>(),
@@ -224,8 +224,8 @@ function App() {
         <section className="resource-panel" aria-label="Recursos del sistema">
           <h4>Estado del sistema</h4>
           <AcademicConnection csrf={state?.csrf || ""} onConnected={() => setAcademicRevision(v => v+1)} />
-          {isAdmin && <label>Modelo LLMLX <select aria-label="Modelo LLMLX" value={state?.inference?.local_model||'llmlx:qwen3.5:4b'} disabled={busy||state?.resources?.pipeline_busy} onChange={async e=>{try{await post('inference',{model:e.target.value});await refresh()}catch(e){setError((e as Error).message)}}}>{(state?.inference?.local_models_info||[]).map(m=>{const free=state?.resources?.llmlx?.available_gib,need=m.size_gib===null?undefined:m.size_gib+(state?.resources?.llmlx?.threshold_gib??1.8),tight=free!==undefined&&need!==undefined&&free<need;return <option key={m.name} value={m.name}>{m.name.replace(/^llmlx:/,'')}{m.size_gib!==null?` · ${m.size_gib.toFixed(1)} GiB`:''}{tight?' · RAM justa':''}</option>})}</select></label>}
-          <p role="status">{state?.resources?.pipeline_busy?'● Procesando':!state?.resources?.llmlx?'● Comprobando':!state.resources.llmlx.connected?'● LLMLX sin conexión':state.resources.llmlx.breaker_open?'● LLMLX en pausa por poca RAM':'● LLMLX listo'}</p>
+          {(()=>{const lx=state?.resources?.llmlx,on=lx?.enabled!==false,model=(state?.inference?.local_model||'').replace(/^llmlx:/,'');return <div className="llm-toggle"><span>Local-LLM · <b>{lx?.connected?(model||'sin modelo activo'):'—'}</b></span><button aria-pressed={on} disabled={toggling||busy||state?.resources?.pipeline_busy||(!on&&!lx?.connected)} onClick={async()=>{setToggling(true);setResourceNote('');try{const r=await post('llmlx/activate',{enabled:!on});setResourceNote(r.enabled?`Local-LLM activo con ${(r.model||'').replace(/^llmlx:/,'')}.`:'Local-LLM desactivado: EscoIA no usará el modelo.');await refresh()}catch(e){setResourceNote((e as Error).message)}finally{setToggling(false)}}}>{toggling?(on?'Desactivando…':'Activando…'):on?'Desactivar':'Activar'}</button></div>})()}
+          <p role="status">{state?.resources?.pipeline_busy?'● Procesando':!state?.resources?.llmlx?'● Comprobando':state.resources.llmlx.enabled===false?'○ Local-LLM desactivado':!state.resources.llmlx.connected?'● Local-LLM sin conexión':state.resources.llmlx.breaker_open?'● Local-LLM en pausa por poca RAM':'● Local-LLM activo'}</p>
           <dl><dt>Motor</dt><dd>{state?.resources?.llmlx?.connected?(state.resources.llmlx.engine||'Conectado'):(state?.resources?.llmlx?.reason||'LocalLLM.app · 127.0.0.1:11500')}</dd><dt>Modelo</dt><dd>{state?.resources?.qwen.resident.length?'Cargado':'Sin cargar'}</dd><dt>RAM libre</dt><dd>{state?.resources?.llmlx?.available_gib!==undefined?`${state.resources.llmlx.available_gib.toFixed(2)} GiB · pausa < ${state.resources.llmlx.threshold_gib?.toFixed(1)} GiB`:'—'}</dd><dt>Presión</dt><dd>{state?.resources?.memory.pressure||'Sin medición'}</dd><dt>Laya</dt><dd>{state?.resources?.laya.status||'Comprobando'}</dd></dl>
           <button disabled={releasing||busy||state?.resources?.pipeline_busy} onClick={async()=>{setReleasing(true);setResourceNote('');try{const r=await post('resources/release',{});setResourceNote(r.message);setState(current=>current?{...current,resources:r.resources}:current);await refresh()}catch(e){setResourceNote((e as Error).message)}finally{setReleasing(false)}}}>{releasing?'Liberando y comprobando…':'Liberar memoria'}</button>
           <small role="status">{resourceNote||(busy||state?.resources?.pipeline_busy?'Espera a que termine la petición activa.':'Descarga el modelo de EscoIA en LLMLX. No cierra aplicaciones ni elimina datos.')}</small>

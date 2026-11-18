@@ -30,3 +30,4 @@ ui/dist/
 
 # App de escritorio
 desktop/node_modules/
+dist/

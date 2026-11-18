@@ -100,8 +100,8 @@ def health(timeout=3):return _call('/health',None,timeout)
 def status(timeout=2):
  """Estado para el panel: conexión, motor, breaker de RAM y memoria disponible según LLMLX."""
  try:h=health(timeout)
- except (RuntimeError,ValueError) as e:return {'connected':False,'reason':str(e)}
- out={'connected':h.get('status')=='ok','engine':h.get('engine',''),'default_model':h.get('model',''),'breaker_open':bool(h.get('breakerOpen'))}
+ except (RuntimeError,ValueError) as e:return {'enabled':enabled(),'connected':False,'reason':str(e)}
+ out={'enabled':enabled(),'connected':h.get('status')=='ok','engine':h.get('engine',''),'default_model':h.get('model',''),'breaker_open':bool(h.get('breakerOpen'))}
  try:
   mem=_call('/v1/hardware-profile',None,timeout).get('memoryNow',{})
   out.update(available_gib=round(mem.get('availableBytes',0)/1024**3,2),threshold_gib=round(mem.get('thresholdBytes',0)/1024**3,2),total_gib=round(mem.get('totalBytes',0)/1024**3,1),pressure=mem.get('pressure',''))
@@ -111,6 +111,39 @@ def status(timeout=2):
 def check():
  """La RAM del modelo la protege el breaker de LLMLX, no el presupuesto de EscoIA."""
  s=status()
+ if not s.get('enabled'):raise RuntimeError('Local-LLM está desactivado en EscoIA; actívalo en Estado del sistema')
  if not s.get('connected'):raise RuntimeError(s.get('reason') or 'LLMLX no está listo; abre LocalLLM.app')
  if s.get('breaker_open'):raise RuntimeError('LLMLX pausó la inferencia por poca RAM (breaker abierto); cierra aplicaciones y reintenta')
  return {'provider':'LLMLX','available_gib':s.get('available_gib')}
+
+# Solo se trabaja con el modelo activo en LocalLLM (campo `model` de /health); EscoIA no elige otro.
+_ACTIVE_CACHE=(0.0,None)
+_ENABLED_FILE=Path(__file__).resolve().parents[2]/'config/llmlx-enabled.json'
+def active_model(timeout=2):
+ """Modelo activo en LocalLLM con prefijo llmlx:, o None si no responde. Caché de 5 s."""
+ global _ACTIVE_CACHE
+ import time
+ at,value=_ACTIVE_CACHE
+ if value is not None and time.monotonic()-at<5:return value
+ try:name=health(timeout).get('model') or ''
+ except (RuntimeError,ValueError):return value
+ value=PREFIX+name if name else None
+ _ACTIVE_CACHE=(time.monotonic(),value);return value
+def enabled():
+ try:return bool(json.loads(_ENABLED_FILE.read_text()).get('enabled',True))
+ except (OSError,ValueError):return True
+def set_enabled(on):
+ _ENABLED_FILE.parent.mkdir(parents=True,exist_ok=True)
+ tmp=_ENABLED_FILE.with_suffix('.tmp');tmp.write_text(json.dumps({'enabled':bool(on)}));tmp.replace(_ENABLED_FILE)
+def activate(on):
+ """Activa: precarga el modelo activo de LocalLLM. Desactiva: lo descarga y bloquea la inferencia de EscoIA."""
+ model=active_model()
+ if on:
+  if not model:raise RuntimeError('LocalLLM no responde o no tiene modelo activo; abre LocalLLM.app')
+  set_enabled(True);_call('/api/generate',{'model':engine_name(model),'prompt':'','keep_alive':'30m'},120)
+ else:
+  set_enabled(False)
+  if model:
+   try:_call('/api/generate',{'model':engine_name(model),'keep_alive':0},15)
+   except RuntimeError:pass
+ return {'enabled':enabled(),'model':model}

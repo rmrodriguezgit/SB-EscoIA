@@ -1165,3 +1165,4 @@ button.workspace:hover{border-color:#3a4c88}
 .copilot-found{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .copilot-found .chip{background:#16224a;border:1px solid #2f3f78;color:#c9d4f5;border-radius:999px;padding:3px 10px;font-size:12px;cursor:pointer}
 .copilot-found .chip.on,.copilot-found .chip:hover{border-color:#5eead4;color:#5eead4}
+.resource-panel .llm-toggle{display:flex;flex-direction:column;gap:6px;margin:8px 0}.resource-panel .llm-toggle b{color:#e4e9ff}.resource-panel .llm-toggle button[aria-pressed="false"]{border-color:#3b6bd6;color:#dfe7ff;background:#13244d}

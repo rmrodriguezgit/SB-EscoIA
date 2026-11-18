@@ -8,8 +8,11 @@ SYSTEM='''Eres EscoIA, un software de apoyo académico, no una universidad. Nunc
 def local_model():
     from pathlib import Path
     config=Path(__file__).resolve().parents[2]/'config/local-model.json'
+    if os.environ.get('BRAIN_MODEL'):return os.environ['BRAIN_MODEL']
+    from . import llmlx_local
+    # Solo el LLM activo de LocalLLM; el archivo de configuración queda como respaldo si no responde.
     data=json.loads(config.read_text()) if config.exists() else {}
-    return os.environ.get('BRAIN_MODEL',data.get('model','llmlx:qwen3.5:4b'))
+    return llmlx_local.active_model() or data.get('model','llmlx:qwen3.5:4b')
 
 def doctor():
     import platform, shutil
@@ -34,6 +37,7 @@ def ollama(path,payload=None,timeout=None):
             if path=='/api/chat':assert_resources()
     from . import llmlx_local
     if llmlx_local.is_llmlx(local_model()) and path!='/api/embed':
+        if path in {'/api/chat','/api/generate'} and not llmlx_local.enabled() and (payload or {}).get('keep_alive')!=0:raise RuntimeError('Local-LLM está desactivado en EscoIA; actívalo en Estado del sistema')
         return llmlx_local.request(path,payload,timeout)
     if local_model()=='uzu:qwen3.5:0.8b:4bit' and path!='/api/embed':
         from .uzu_local import request
