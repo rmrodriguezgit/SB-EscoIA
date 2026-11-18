@@ -49,14 +49,32 @@ def request(path,payload=None,timeout=120):
  """Contrato Ollama del llamador; nombres con prefijo llmlx: hacia EscoIA."""
  body=dict(payload) if payload is not None else None
  if body and 'model' in body:body['model']=engine_name(body['model'])
+ if path=='/api/generate' and body and '/' in body.get('model','') and body.get('keep_alive')==0:return {'done':True}  # proveedor remoto: no hay pesos locales que descargar
  if path=='/api/chat' and body is not None:body.setdefault('think',False)  # Qwen3: sin razonamiento oculto que consuma num_predict
- if path=='/api/chat' and body is not None and body.get('format') and body['model'] in _NO_FORMAT:return _chat_template_json(body,timeout)
+ if path=='/api/chat' and body is not None and body.get('format') and (body['model'] in _NO_FORMAT or '/' in body['model']):return _chat_template_json(body,timeout)
  try:result=_call(path,body,timeout)
  except StructuredOutputUnavailable:
   if path!='/api/chat' or not (body or {}).get('format'):raise
   _NO_FORMAT.add(body['model']);return _chat_template_json(body,timeout)
+ if path=='/api/tags':
+  # Los modelos de proveedores de LocalLLM (p. ej. localia/…) solo aparecen en /v1/models.
+  try:extra=[{'name':m['id'],'model':m['id'],'size':0} for m in _call('/v1/models',None,10).get('data',[]) if '/' in m.get('id','')]
+  except RuntimeError:extra=[]
+  result={**result,'models':result.get('models',[])+extra}
+ if path=='/api/chat' and body and body.get('format'):result=_first_json(result)
  if path in {'/api/tags','/api/ps'}:result={**result,'models':_prefixed(result.get('models',[]))}
  return result
+
+def _first_json(out):
+ """Algunos modelos (p. ej. qwen2.5-coder vía LocalIA) añaden texto tras el JSON: se conserva solo el primer objeto."""
+ text=(out.get('message') or {}).get('content','')
+ try:json.loads(text);return out
+ except ValueError:pass
+ start=text.find('{')
+ if start<0:return out
+ try:value,_=json.JSONDecoder().raw_decode(text[start:])
+ except ValueError:return out
+ return {**out,'message':{**out['message'],'content':json.dumps(value,ensure_ascii=False)}}
 
 _HELPERS=None
 def _json_helpers():
@@ -101,7 +119,7 @@ def status(timeout=2):
  """Estado para el panel: conexión, motor, breaker de RAM y memoria disponible según LLMLX."""
  try:h=health(timeout)
  except (RuntimeError,ValueError) as e:return {'enabled':enabled(),'connected':False,'reason':str(e)}
- out={'enabled':enabled(),'connected':h.get('status')=='ok','engine':h.get('engine',''),'default_model':h.get('model',''),'breaker_open':bool(h.get('breakerOpen'))}
+ out={'enabled':enabled(),'connected':h.get('status')=='ok','engine':h.get('engine',''),'provider':h.get('defaultProvider') or 'local','default_model':h.get('model',''),'breaker_open':bool(h.get('breakerOpen'))}
  try:
   mem=_call('/v1/hardware-profile',None,timeout).get('memoryNow',{})
   out.update(available_gib=round(mem.get('availableBytes',0)/1024**3,2),threshold_gib=round(mem.get('thresholdBytes',0)/1024**3,2),total_gib=round(mem.get('totalBytes',0)/1024**3,1),pressure=mem.get('pressure',''))
@@ -125,7 +143,12 @@ def active_model(timeout=2):
  import time
  at,value=_ACTIVE_CACHE
  if value is not None and time.monotonic()-at<5:return value
- try:name=health(timeout).get('model') or ''
+ try:
+  h=health(timeout);provider=h.get('defaultProvider') or 'local';name=h.get('model') or ''
+  if provider!='local':
+   # Proveedor activo en LocalLLM (p. ej. localia): su modelo aparece en /v1/models como «proveedor/modelo».
+   ids=[m.get('id','') for m in _call('/v1/models',None,timeout).get('data',[])]
+   name=next((i for i in ids if i.startswith(provider+'/')),'')
  except (RuntimeError,ValueError):return value
  value=PREFIX+name if name else None
  _ACTIVE_CACHE=(time.monotonic(),value);return value
@@ -138,12 +161,14 @@ def set_enabled(on):
 def activate(on):
  """Activa: precarga el modelo activo de LocalLLM. Desactiva: lo descarga y bloquea la inferencia de EscoIA."""
  model=active_model()
+ local='/' not in engine_name(model or '')  # proveedor remoto de LocalLLM: no hay pesos que cargar aquí
  if on:
   if not model:raise RuntimeError('LocalLLM no responde o no tiene modelo activo; abre LocalLLM.app')
-  set_enabled(True);_call('/api/generate',{'model':engine_name(model),'prompt':'','keep_alive':'30m'},120)
+  set_enabled(True)
+  if local:_call('/api/generate',{'model':engine_name(model),'prompt':'','keep_alive':'30m'},120)
  else:
   set_enabled(False)
-  if model:
+  if model and local:
    try:_call('/api/generate',{'model':engine_name(model),'keep_alive':0},15)
    except RuntimeError:pass
  return {'enabled':enabled(),'model':model}
