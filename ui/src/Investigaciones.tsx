@@ -105,6 +105,7 @@ function StatLab({ post, onBusy, onResult }: { post: Post; onBusy: (b: boolean) 
                 <div><dt>{result.effect.name}</dt><dd>{fmt(result.effect.value, 3)} <small>{result.effect.magnitude}</small></dd></div>
               </dl>
               {result.descriptives && <pre className="inv-desc">{JSON.stringify(result.descriptives, (_, v) => (typeof v === "number" ? Number(v.toFixed(4)) : v), 1)}</pre>}
+              {result.normality && <p className="muted">{result.normality.test}: W={result.normality.W.toFixed(3)}, p={result.normality.p.toFixed(4)} → {result.normality.normal ? "normal (t pareada válida)" : "no normal (usa Wilcoxon)"}</p>}
               {result.warnings?.map((w: string) => <p key={w} className="inv-warn">⚠ {w}</p>)}
               <p className="muted">Supuestos: {result.assumptions.join(" · ")}</p>
               <p>{result.interpretation}</p>

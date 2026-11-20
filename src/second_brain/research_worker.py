@@ -112,6 +112,10 @@ def hypothesis_test(payload):
   if len(a)!=len(b):raise ValueError('Las muestras pareadas deben tener el mismo tamaño')
   diff=[i-j for i,j in zip(a,b)]
   if len(a)<3:raise ValueError('Se requieren al menos tres pares')
+  if len(set(diff))>1:
+   sw=stats.shapiro(diff);out['normality']={'test':'Shapiro-Wilk sobre d','W':float(sw.statistic),'p':float(sw.pvalue),'normal':bool(sw.pvalue>.05)}
+   if test=='t_paired' and sw.pvalue<=.05:out['warnings'].append(f'Shapiro-Wilk p={sw.pvalue:.4f}: d no normal; usa Wilcoxon')
+   if len(a)<30:out['warnings'].append('n<30: Shapiro-Wilk tiene poca potencia; reporta t y Wilcoxon como sensibilidad')
   if test=='t_paired':
    r=stats.ttest_rel(a,b,alternative=tails);sd=statistics.stdev(diff);dz=statistics.mean(diff)/sd if sd else float('nan')
    out.update(statistic=float(r.statistic),p=float(r.pvalue),df=len(a)-1,n=len(a),effect={'name':'dz de Cohen','value':dz,'magnitude':_magnitude('d',dz)},
