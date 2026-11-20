@@ -3,7 +3,7 @@ import collections,concurrent.futures,json,math,os,re,sqlite3,subprocess,threadi
 from pathlib import Path
 from .core import identifier,now,normal,atomic,Brain
 PHASES=['Definición','Diseño','Recopilación','Análisis e integración']
-KINDS={'likert','boolean','single','multiple','text','audio'}
+KINDS={'likert','number','boolean','single','multiple','text','audio'}
 IO=concurrent.futures.ThreadPoolExecutor(max_workers=2,thread_name_prefix='escoia-research')
 CPU_SLOTS=threading.BoundedSemaphore(2)
 ANALYSIS=threading.Lock()
@@ -49,14 +49,14 @@ def definition(d):
  out={k:str(d.get(k,''))[:3000] for k in ['title','question','objective','specific','hypothesis_text','sampling','conclusion']}
  if any(not out[k].strip() for k in ['title','question','objective']):raise ValueError('Indica título, pregunta central y objetivo general')
  n=int(d.get('target_n',50));qn=int(d.get('qual_target',8))
- if not 8<=qn<=15 or not qn<=n<=50:raise ValueError('N debe ser entre n y 50; subconjunto cualitativo entre 8 y 15')
+ if not 8<=qn<=n or not 8<=n<=50:raise ValueError('N entre 8 y 50; subconjunto cualitativo entre 8 y N')
  h=d.get('hypothesis') or {}
  if h:
-  if h.get('test') not in ['chi2','welch','anova','regression']:raise ValueError('Prueba inválida')
+  if h.get('test') not in ['chi2','welch','anova','regression','t_paired','wilcoxon','spearman','mannwhitney']:raise ValueError('Prueba inválida')
   if not h.get('statement') or not h.get('x') or not h.get('y'):raise ValueError('Hipótesis requiere declaración y dos variables')
   alpha=float(h.get('alpha',.05))
   if not 0<alpha<1:raise ValueError('Alpha inválido')
-  h={k:h[k] for k in ['test','statement','x','y']};h['alpha']=alpha
+  h={k:h[k] for k in ['test','statement','x','y']};h['alpha']=alpha;h['alternative']=d['hypothesis']['alternative'] if (d.get('hypothesis') or {}).get('alternative') in ['two-sided','less','greater'] else 'two-sided'
  out.update(target_n=n,qual_target=qn,hypothesis=h,demo=bool(d.get('demo',False)));return out
 
 def create(b,d):
@@ -119,6 +119,7 @@ def respond(b,sid,d):
   if value is None or value=='' or value==[]:
    if q['required']:raise ValueError('Falta respuesta requerida: '+q['title'])
    continue
+  if kind=='number' and (type(value) not in (int,float) or not math.isfinite(value) or abs(value)>1e6):raise ValueError('Valor numérico inválido: '+q['title'])
   if kind=='likert' and (type(value)!=int or not 1<=value<=5):raise ValueError('Likert debe ser entero 1–5')
   if kind=='boolean' and type(value)!=bool:raise ValueError('Verdadero/falso debe ser booleano')
   if kind=='single' and value not in q['options']:raise ValueError('Opción única inválida')

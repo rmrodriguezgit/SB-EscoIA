@@ -9,6 +9,8 @@ def quantitative(payload):
   values=[r['answers'][q['id']] for r in rows if q['id'] in r['answers']]
   counts=collections.Counter(str(v) for value in values for v in (value if isinstance(value,list) else [value]))
   entry={'id':q['id'],'title':q['title'],'kind':q['kind'],'n':len(values),'missing':len(rows)-len(values),'frequencies':dict(counts),'percentages':{k:round(v/max(1,len(values))*100,2) for k,v in counts.items()}}
+  if q['kind']=='number' and values:
+   entry.update(mean=statistics.mean(values),sd=statistics.stdev(values) if len(values)>1 else None,median=statistics.median(values),min=min(values),max=max(values),frequencies={},percentages={})
   if q['kind']=='likert' and values:
    entry.update(mean=statistics.mean(values),sd=statistics.stdev(values) if len(values)>1 else None,median=statistics.median(values),note='Media de Likert supone intervalos comparables; se muestran también distribución y mediana.')
   if q['kind']=='multiple':entry['note']='Porcentajes por respondente; pueden sumar más de 100%.'
@@ -25,6 +27,16 @@ def quantitative(payload):
   if len(pairs)>=4:
    xs,ys=zip(*pairs);groups={str(k):[b for a,b in pairs if str(a)==str(k)] for k in sorted(set(xs),key=str)}
    assumptions=[];effect=None
+   if test in ['t_paired','wilcoxon','spearman','mannwhitney']:
+    num={'likert','number'}
+    if test=='mannwhitney':
+     if qm[y]['kind'] not in num or len(groups)!=2:raise ValueError('Mann-Whitney: X con dos grupos y Y numérica')
+     g=list(groups.values());r=hypothesis_test({'test':test,'x':g[0],'y':g[1],'alternative':hypothesis.get('alternative','two-sided'),'alpha':infer['alpha']});r['group_order']=list(groups)
+    else:
+     if any(qm[k]['kind'] not in num for k in [x,y]):raise ValueError('La prueba requiere dos variables numéricas o Likert')
+     r=hypothesis_test({'test':test,'x':list(xs),'y':list(ys),'alternative':hypothesis.get('alternative','two-sided'),'alpha':infer['alpha']})
+    infer.update(status='calculated_conditional',**{k:v for k,v in r.items() if k not in ['test','alpha','status','interpretation','limitations']},interpretation=('p < alpha: evidencia contra H0 bajo los supuestos.' if r['p']<infer['alpha'] else 'p >= alpha: evidencia insuficiente para rechazar H0; no demuestra igualdad.'),limitations='Diseño de un grupo sin control: no prueba causalidad. p no mide importancia.')
+    return {'metrics':out,'inferential':infer}
    if test=='chi2':
     catsx=sorted(set(map(str,xs)));catsy=sorted(set(map(str,ys)));table=[[sum(str(a)==i and str(b)==j for a,b in pairs) for j in catsy] for i in catsx]
     if min(len(catsx),len(catsy))<2:raise ValueError('Chi-cuadrada requiere al menos dos categorías por variable')
