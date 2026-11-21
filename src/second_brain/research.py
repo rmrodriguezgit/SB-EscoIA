@@ -177,8 +177,9 @@ def analyze(b,sid,use_ai=False):
   if use_ai:
    acquired=PIPELINE_LOCK.acquire(blocking=False)
    if not acquired:raise ValueError('Modelo ocupado por otra petición')
-  from .runtime import assert_resources
-  assert_resources(.35)
+  if use_ai:
+   from .runtime import assert_resources
+   assert_resources(.35)  # solo el modelo necesita margen de RAM; la estadística CPU es ligera
   s=get(b,sid)
   if s['phase']!=3:raise ValueError('Avanza a análisis e integración tras cerrar la recopilación')
   run=identifier();b.event(run,'Gateway','Investigación mixta: '+s['title']);b.event(run,'Cuantitativo','Procesos CPU acotados: estadística y preparación temática')
