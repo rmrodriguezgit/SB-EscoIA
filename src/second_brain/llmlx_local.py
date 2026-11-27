@@ -131,7 +131,8 @@ def check():
  s=status()
  if not s.get('enabled'):raise RuntimeError('Local-LLM está desactivado en EscoIA; actívalo en Estado del sistema')
  if not s.get('connected'):raise RuntimeError(s.get('reason') or 'LLMLX no está listo; abre LocalLLM.app')
- if s.get('breaker_open'):raise RuntimeError('LLMLX pausó la inferencia por poca RAM (breaker abierto); cierra aplicaciones y reintenta')
+ # El breaker pausa el motor MLX propio; un proveedor activo (p. ej. localia) lo sirve LocalLLM con sus propios límites.
+ if s.get('breaker_open') and s.get('provider','local')=='local':raise RuntimeError('LLMLX pausó la inferencia por poca RAM (breaker abierto); cierra aplicaciones y reintenta')
  return {'provider':'LLMLX','available_gib':s.get('available_gib')}
 
 # Solo se trabaja con el modelo activo en LocalLLM (campo `model` de /health); EscoIA no elige otro.
