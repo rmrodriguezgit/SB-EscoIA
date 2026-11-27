@@ -270,10 +270,9 @@ def references(b,sid):
  return get(b,sid)
 
 def report(b,sid):
- from .runtime import assert_resources
  s=get(b,sid)
  if not s['analysis'] or s['analysis_stale']:raise ValueError('Analiza la revisión actual antes de exportar')
- assert_resources(.35);eid=identifier();folder=b.home/'data/exports'/eid;folder.mkdir(parents=True,exist_ok=True);name='Reporte-investigacion-mixta.pdf'
+ eid=identifier();folder=b.home/'data/exports'/eid;folder.mkdir(parents=True,exist_ok=True);name='Reporte-investigacion-mixta.pdf'
  worker(b.home,{'action':'pdf','study':s,'analysis':s['analysis'],'date':__import__('datetime').datetime.now(__import__('zoneinfo').ZoneInfo('America/Mexico_City')).date().isoformat(),'path':str(folder/name)})
  atomic(folder/'dataset.json',json.dumps(s,ensure_ascii=False,indent=2));atomic(folder/'plan.json',json.dumps({'id':eid,'code':'investigacion','files':{'pdf':name,'json':'dataset.json'}}))
  return {'pdf':f'/api/export?id={eid}&format=pdf','json':f'/api/export?id={eid}&format=json'}
